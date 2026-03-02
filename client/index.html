@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Precificador SaaS</title>
+</head>
+<body>
+  <h1>Precificador SaaS</h1>
+
+  <input type="number" id="custo" placeholder="Custo" />
+  <input type="number" id="margem" placeholder="Margem (%)" />
+  <button onclick="calcular()">Calcular</button>
+
+  <h2 id="resultado"></h2>
+
+  <script>
+    async function calcular() {
+      const custo = document.getElementById("custo").value;
+      const margem = document.getElementById("margem").value;
+
+      const response = await fetch("http://localhost:3000/calcular", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          custo: Number(custo),
+          margem: Number(margem)
+        })
+      });
+
+      const data = await response.json();
+
+      document.getElementById("resultado").innerText =
+        "Preço Final: R$ " + data.precoFinal;
+    }
+  </script>
+</body>
+</html>
