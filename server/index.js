@@ -1,7 +1,19 @@
-const app = require("./src/app");
+require('dotenv').config()
 
-const PORT = 3000;
+const express = require('express')
+const cors = require('cors')
 
-app.listen(PORT, () => {
-  console.log("Servidor rodando 🚀");
-});
+const app = express()
+
+app.use(cors())
+app.use(express.json())
+
+const produtosRoutes = require('./routes/produtos')
+const calculoRoutes = require('./routes/calculo')
+
+app.use('/produtos', produtosRoutes)
+app.use('/calcular-preco', calculoRoutes)
+
+app.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000")
+})

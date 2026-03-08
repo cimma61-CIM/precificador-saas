@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Produtos</title>
+
+<link rel="stylesheet" href="/client/css/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Produtos</h1>
+
+<!-- CADASTRO -->
+
+<div class="card">
+
+<h2>Novo Produto</h2>
+
+<input id="nome" placeholder="Nome do produto">
+
+<input id="barcode" placeholder="Código de barras">
+
+<input id="ncm" placeholder="NCM">
+
+<input id="custo" type="number" placeholder="Custo">
+
+<input id="preco" type="number" placeholder="Preço">
+
+<input id="quantidade" type="number" placeholder="Quantidade">
+
+<input id="estoque_min" type="number" placeholder="Estoque mínimo">
+
+<input id="estoque_max" type="number" placeholder="Estoque máximo">
+
+<input id="localizacao" placeholder="Localização estoque">
+
+<textarea id="descricao" placeholder="Descrição"></textarea>
+
+<button onclick="salvarProduto()">Salvar Produto</button>
+
+</div>
+
+<!-- BUSCA -->
+
+<input id="busca-produto" placeholder="Buscar produto">
+
+<!-- TABELA -->
+
+<div class="card">
+
+<h2>Produtos cadastrados</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+<th>Nome</th>
+<th>Barcode</th>
+<th>NCM</th>
+<th>Estoque</th>
+<th>Custo</th>
+<th>Preço</th>
+<th>Localização</th>
+
+</tr>
+
+</thead>
+
+<tbody id="tabela-produtos">
+
+</tbody>
+
+</table>
+
+</div>
+
+<div id="paginacao"></div>
+
+</div>
+
+<script src="produtos.js"></script>
+
+</body>
+</html>

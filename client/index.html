@@ -1,39 +1,133 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Precificador SaaS</title>
+<meta charset="UTF-8">
+<title>Precificador SaaS</title>
 </head>
+
 <body>
-  <h1>Precificador SaaS</h1>
 
-  <input type="number" id="custo" placeholder="Custo" />
-  <input type="number" id="margem" placeholder="Margem (%)" />
-  <button onclick="calcular()">Calcular</button>
+<h2>Novo Produto</h2>
 
-  <h2 id="resultado"></h2>
+<input id="sku" placeholder="SKU">
 
-  <script>
-    async function calcular() {
-      const custo = document.getElementById("custo").value;
-      const margem = document.getElementById("margem").value;
+<input id="nome" placeholder="Nome do produto">
 
-      const response = await fetch("http://localhost:3000/calcular", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          custo: Number(custo),
-          margem: Number(margem)
-        })
-      });
+<input id="custo" placeholder="Preço de custo">
 
-      const data = await response.json();
+<input id="taxa" placeholder="Taxa marketplace (%)">
 
-      document.getElementById("resultado").innerText =
-        "Preço Final: R$ " + data.precoFinal;
-    }
-  </script>
+<input id="imposto" placeholder="Imposto (%)">
+
+<input id="margem" placeholder="Margem lucro (%)">
+
+<input id="marketplace" placeholder="Marketplace (Mercado Livre, Shopee...)">
+
+<button onclick="salvarProduto()">Salvar</button>
+
+<br><br>
+
+<table border="1">
+<thead>
+<tr>
+<th>ID</th>
+<th>SKU</th>
+<th>Nome</th>
+<th>Custo</th>
+<th>Venda</th>
+<th>Marketplace</th>
+<th>Ações</th>
+</tr>
+</thead>
+
+<tbody id="tabela-produtos"></tbody>
+
+</table>
+
+<script>
+
+async function carregarProdutos(){
+
+  const resposta = await fetch("http://localhost:3000/produtos")
+  const produtos = await resposta.json()
+
+  const tabela = document.getElementById("tabela-produtos")
+
+  tabela.innerHTML = ""
+
+  produtos.forEach(produto => {
+
+    const linha = `
+      <tr>
+        <td>${produto.id}</td>
+        <td>${produto.sku}</td>
+        <td>${produto.nome}</td>
+        <td>${produto.preco_custo}</td>
+        <td>${produto.preco_venda ?? "-"}</td>
+        <td>${produto.marketplace}</td>
+        <td>
+          <button onclick="excluirProduto(${produto.id})">
+          Excluir
+          </button>
+        </td>
+      </tr>
+    `
+
+    tabela.innerHTML += linha
+
+  })
+
+}
+
+
+async function excluirProduto(id){
+
+  await fetch(`http://localhost:3000/produtos/${id}`,{
+    method:"DELETE"
+  })
+
+  carregarProdutos()
+
+}
+
+carregarProdutos()
+
+async function salvarProduto(){
+
+const sku = document.getElementById("sku").value
+const nome = document.getElementById("nome").value
+const preco_custo = document.getElementById("custo").value
+const taxaMarketplace = document.getElementById("taxa").value
+const imposto = document.getElementById("imposto").value
+const margem = document.getElementById("margem").value
+const marketplace = document.getElementById("marketplace").value
+
+await fetch("http://localhost:3000/produtos",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+sku,
+nome,
+preco_custo,
+taxaMarketplace,
+imposto,
+margem,
+marketplace
+})
+
+})
+
+carregarProdutos()
+
+}
+
+</script>
+
 </body>
 </html>
