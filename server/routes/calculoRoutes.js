@@ -1,23 +1,40 @@
 const express = require('express')
 const router = express.Router()
+const {
+  buscarTaxaPorMarketplace,
+  calcularPrecoComTaxas
+} = require('../services/precoService')
 
-const { calcularPreco } = require('../services/calculoPreco')
+router.post('/', async (req, res) => {
+  const usuarioId = req.user.id
+  const { custo, marketplace, margem, lucro_minimo } = req.body
 
-router.post('/calcular', (req, res) => {
+  if (custo === undefined || !marketplace || margem === undefined) {
+    return res.status(400).json({
+      erro: 'Custo, marketplace e margem sao obrigatorios'
+    })
+  }
+
   try {
-    const { custo, frete, taxa, margem } = req.body
+    const taxa = await buscarTaxaPorMarketplace(usuarioId, marketplace)
 
-    const preco = calcularPreco({
+    if (!taxa) {
+      return res.status(404).json({
+        erro: 'Taxa do marketplace nao encontrada para este usuario'
+      })
+    }
+
+    const resultado = calcularPrecoComTaxas({
       custo,
-      frete,
-      taxaPercentual: taxa,
-      margem
+      margem,
+      lucro_minimo,
+      taxa
     })
 
-    res.json({ preco_sugerido: preco })
+    res.json(resultado)
   } catch (err) {
-    console.error('Erro no cálculo:', err.message)
-    res.status(500).json({ erro: err.message || 'Erro no cálculo' })
+    console.error('Erro no calculo:', err)
+    res.status(500).json({ erro: err.message || 'Erro no calculo' })
   }
 })
 

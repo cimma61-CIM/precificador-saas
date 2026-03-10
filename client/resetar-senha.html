@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resetar Senha</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-page">
+  <main class="auth-page-shell">
+    <section class="auth-panel">
+      <h1>Definir nova senha</h1>
+      <p>Informe e confirme a nova senha para concluir a recuperação.</p>
+
+      <form id="reset-password-form" class="stack-form">
+        <label for="nova-senha">Nova senha</label>
+        <input id="nova-senha" name="nova-senha" type="password" required>
+
+        <label for="confirmar-senha">Confirmar senha</label>
+        <input id="confirmar-senha" name="confirmar-senha" type="password" required>
+
+        <button type="submit" class="button-primary">Salvar nova senha</button>
+      </form>
+
+      <div id="mensagem" class="feedback"></div>
+
+      <p><a href="/">Voltar para o login</a></p>
+    </section>
+  </main>
+
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token')
+
+    async function enviarRequisicao(url, payload) {
+      const resposta = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+
+      const contentType = resposta.headers.get('content-type') || ''
+      const dados = contentType.includes('application/json')
+        ? await resposta.json()
+        : { erro: await resposta.text() }
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || 'Erro ao processar a solicitação.')
+      }
+
+      return dados
+    }
+
+    document
+      .getElementById('reset-password-form')
+      .addEventListener('submit', async (event) => {
+        event.preventDefault()
+
+        const mensagem = document.getElementById('mensagem')
+        mensagem.textContent = ''
+        mensagem.className = 'feedback'
+
+        if (!token) {
+          mensagem.className = 'feedback text-danger'
+          mensagem.textContent = 'Token de recuperacao ausente.'
+          return
+        }
+
+        const novaSenha = document.getElementById('nova-senha').value
+        const confirmarSenha = document.getElementById('confirmar-senha').value
+
+        if (novaSenha !== confirmarSenha) {
+          mensagem.className = 'feedback text-danger'
+          mensagem.textContent = 'As senhas nao coincidem.'
+          return
+        }
+
+        try {
+          const dados = await enviarRequisicao('/auth/resetar-senha', {
+            token,
+            nova_senha: novaSenha
+          })
+
+          mensagem.className = 'feedback text-success'
+          mensagem.textContent = dados.mensagem || 'Senha atualizada com sucesso.'
+          document.getElementById('reset-password-form').reset()
+        } catch (error) {
+          mensagem.className = 'feedback text-danger'
+          mensagem.textContent = error.message
+        }
+      })
+  </script>
+</body>
+</html>

@@ -1,7 +1,19 @@
 {
+  "name": "precificador-saas",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server/server.js",
+    "migrate": "node server/createTable.js",
+    "seed:marketplaces": "node server/seedMarketplaces.js"
+  },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^8.0.2",
     "pg": "^8.19.0"
   }
 }

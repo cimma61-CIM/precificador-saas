@@ -1,99 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
-
 <meta charset="UTF-8">
 <title>Precificador SaaS</title>
-
-<link rel="stylesheet" href="/client/css/style.css">
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-display:flex;
-height:100vh;
-}
-
-.sidebar{
-width:220px;
-background:#1f2937;
-color:white;
-padding:20px;
-}
-
-.sidebar h2{
-margin-top:0;
-}
-
-.menu a{
-display:block;
-color:white;
-padding:10px;
-text-decoration:none;
-border-radius:5px;
-margin-bottom:5px;
-}
-
-.menu a:hover{
-background:#374151;
-}
-
-.content{
-flex:1;
-padding:30px;
-}
-
-iframe{
-width:100%;
-height:90%;
-border:none;
-}
-
-</style>
-
+<link rel="stylesheet" href="/css/style.css">
 </head>
-
 <body>
 
-<div class="sidebar">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <h2>Precificador</h2>
+      <span>Painel de gestão para marketplaces</span>
+    </div>
 
-<h2>SaaS</h2>
+    <nav class="menu">
+      <a href="#" class="active" onclick="carregarPagina('resumo.html', this)">Dashboard</a>
+      <a href="#" onclick="carregarPagina('produtos.html', this)">Produtos</a>
+      <a href="#" onclick="carregarPagina('marketplaces.html', this)">Marketplaces</a>
+      <a href="#" onclick="carregarPagina('taxas.html', this)">Taxas Marketplace</a>
+      <a href="#" onclick="logout()">Sair</a>
+    </nav>
+  </aside>
 
-<div class="menu">
+  <main class="content">
+    <div class="content-header">
+      <div>
+        <h1>Painel</h1>
+        <p>Acompanhe indicadores, configure marketplaces e atualize seus preços.</p>
+      </div>
+    </div>
 
-<a href="#" onclick="carregarPagina('produtos.html')">Produtos</a>
-
-<a href="#">Precificação</a>
-
-<a href="#">Relatórios</a>
-
-<a href="#">Configurações</a>
-
-</div>
-
-</div>
-
-<div class="content">
-
-<h1>Painel</h1>
-
-<iframe id="conteudo" src="produtos.html"></iframe>
-
+    <div class="frame-shell">
+      <iframe id="conteudo" src="resumo.html"></iframe>
+    </div>
+  </main>
 </div>
 
 <script>
-
-function carregarPagina(pagina){
-
-document.getElementById("conteudo").src = pagina
-
+if (!localStorage.getItem("token")) {
+  window.location.href = "/"
 }
 
+function carregarPagina(pagina, link){
+  document.getElementById("conteudo").src = pagina
+  document
+    .querySelectorAll(".menu a")
+    .forEach((item) => item.classList.remove("active"))
+
+  if (link) {
+    link.classList.add("active")
+  }
+}
+
+function logout() {
+  localStorage.removeItem("token")
+  localStorage.removeItem("usuario")
+  window.location.href = "/"
+}
 </script>
 
 </body>
-
 </html>

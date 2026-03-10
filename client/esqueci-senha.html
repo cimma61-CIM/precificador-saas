@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Esqueci Minha Senha</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-page">
+  <main class="auth-page-shell">
+    <section class="auth-panel">
+      <h1>Recuperar senha</h1>
+      <p>Informe seu email para gerar um link de redefinição.</p>
+
+      <form id="forgot-password-form" class="stack-form">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="voce@empresa.com" required>
+        <button type="submit" class="button-primary">Enviar link</button>
+      </form>
+
+      <div id="mensagem" class="feedback"></div>
+      <div id="reset-link-wrapper" class="feedback"></div>
+
+      <p><a href="/">Voltar para o login</a></p>
+    </section>
+  </main>
+
+  <script>
+    async function enviarRequisicao(url, payload) {
+      const resposta = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+
+      const contentType = resposta.headers.get('content-type') || ''
+      const dados = contentType.includes('application/json')
+        ? await resposta.json()
+        : { erro: await resposta.text() }
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || 'Erro ao processar a solicitação.')
+      }
+
+      return dados
+    }
+
+    document
+      .getElementById('forgot-password-form')
+      .addEventListener('submit', async (event) => {
+        event.preventDefault()
+
+        const mensagem = document.getElementById('mensagem')
+        const resetLinkWrapper = document.getElementById('reset-link-wrapper')
+        mensagem.textContent = ''
+        resetLinkWrapper.textContent = ''
+        mensagem.className = 'feedback'
+        resetLinkWrapper.className = 'feedback'
+
+        try {
+          const email = document.getElementById('email').value.trim()
+          const dados = await enviarRequisicao('/auth/esqueci-senha', { email })
+
+          mensagem.className = 'feedback text-success'
+          mensagem.textContent = dados.mensagem || 'Link gerado com sucesso.'
+
+          if (dados.reset_link) {
+            resetLinkWrapper.className = 'feedback text-success'
+            resetLinkWrapper.innerHTML = `
+              <strong>Link para teste:</strong><br>
+              <a href="${dados.reset_link}">${dados.reset_link}</a>
+            `
+          }
+        } catch (error) {
+          mensagem.className = 'feedback text-danger'
+          mensagem.textContent = error.message
+        }
+      })
+  </script>
+</body>
+</html>

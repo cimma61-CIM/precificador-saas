@@ -1,30 +1,46 @@
-# Instalação e Execução do Projeto
+# Instalacao e Execucao do Projeto
 
 ## Requisitos
 - Node.js instalado
 - PostgreSQL instalado ou banco hospedado no Render
-- VS Code
 
-## Instalar dependências
+## Instalar dependencias
+Na raiz do projeto:
 
-### Na raiz do projeto
+```bash
 npm install
+```
 
-### Dentro da pasta server
-npm install
+## Variaveis de ambiente
+Crie um arquivo `server/.env` com pelo menos:
 
-## Variáveis de ambiente
-Criar um arquivo .env dentro da pasta server com a variável:
-
+```env
 DATABASE_URL=sua_url_do_banco
+JWT_SECRET=sua_chave_jwt
+PORT=3010
+```
+
+Opcional para recuperacao de senha por email:
+
+```env
+APP_BASE_URL=http://localhost:3010
+SMTP_HOST=smtp.seuprovedor.com
+SMTP_PORT=587
+SMTP_USER=usuario_smtp
+SMTP_PASS=senha_smtp
+SMTP_FROM=Precificador SaaS <no-reply@seudominio.com>
+```
 
 ## Rodar o servidor
-Dentro da pasta server:
-node server.js
+Na raiz do projeto:
 
-ou, se existir script start:
+```bash
 npm start
+```
 
 ## Criar tabelas
-Se existir arquivo createTable.js:
-node createTable.js
+Na raiz do projeto:
+
+```bash
+npm run migrate
+```
