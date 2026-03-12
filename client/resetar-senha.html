@@ -14,10 +14,10 @@
 
       <form id="reset-password-form" class="stack-form">
         <label for="nova-senha">Nova senha</label>
-        <input id="nova-senha" name="nova-senha" type="password" required>
+        <input id="nova-senha" name="nova-senha" type="password" data-password-toggle required>
 
         <label for="confirmar-senha">Confirmar senha</label>
-        <input id="confirmar-senha" name="confirmar-senha" type="password" required>
+        <input id="confirmar-senha" name="confirmar-senha" type="password" data-password-toggle required>
 
         <button type="submit" class="button-primary">Salvar nova senha</button>
       </form>
@@ -28,6 +28,7 @@
     </section>
   </main>
 
+  <script src="/js/password-toggle.js"></script>
   <script>
     const token = new URLSearchParams(window.location.search).get('token')
 

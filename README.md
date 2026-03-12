@@ -1,91 +1,104 @@
 # Precificador SaaS
 
-SaaS de precificacao para marketplaces, com backend em Node.js + Express, banco PostgreSQL e frontend em HTML, CSS e JavaScript.
+SaaS de precificacao para pequenos vendedores com foco em cadastro de produtos, configuracao de taxas por marketplace e calculo de precos com base em margem e custos operacionais.
+
+## Visao geral
+
+O projeto usa um backend em Node.js + Express conectado ao PostgreSQL e um frontend em HTML, CSS e JavaScript servido pelo proprio backend. Hoje a aplicacao concentra autenticacao, produtos, marketplaces, taxas, analise de lucro e reprecificacao basica.
 
 ## Stack
+
 - Backend: Node.js + Express
 - Banco: PostgreSQL
+- Frontend: HTML + CSS + JavaScript
 - Autenticacao: JWT
-- Frontend: HTML + CSS + JS
+- Email: Nodemailer
 
-## Estrutura
-- `client/` interface web
-- `server/` backend e regras de negocio
+## Estrutura de pastas
 
-## Como rodar
-1. Instale as dependencias:
+- `client/`: paginas e assets estaticos da interface
+- `server/`: servidor, rotas, servicos, middleware e scripts de banco
+- `docs/`: documentacao principal consolidada
+- `docs/legado/`: documentos antigos preservados para referencia
+
+## Como rodar o projeto
+
+### 1. Instalar dependencias
 
 ```bash
 npm install
 ```
 
-2. Configure `server/.env`.
+### 2. Configurar ambiente
 
-Exemplo minimo:
+Use `.env.example` como referencia e crie `server/.env` com pelo menos:
 
 ```env
-DATABASE_URL=sua_url_do_banco
+DATABASE_URL=postgres://usuario:senha@localhost:5432/precificador
 JWT_SECRET=sua_chave_jwt
 PORT=3010
 ```
 
-3. Rode as migracoes:
+Variaveis opcionais para recuperacao de senha por email:
+
+```env
+APP_BASE_URL=http://localhost:3010
+SMTP_HOST=smtp.seuprovedor.com
+SMTP_PORT=587
+SMTP_USER=usuario_smtp
+SMTP_PASS=senha_smtp
+SMTP_FROM=Precificador SaaS <no-reply@seudominio.com>
+```
+
+### 3. Criar ou atualizar tabelas
 
 ```bash
 npm run migrate
 ```
 
-4. Inicie o projeto:
+### 4. Popular marketplaces padrao
+
+```bash
+npm run seed:marketplaces
+```
+
+### 5. Iniciar servidor
 
 ```bash
 npm start
 ```
 
+## Como rodar client e server
+
+No estado atual do projeto, `client` e `server` nao sao iniciados separadamente:
+
+- o frontend esta na pasta `client/`;
+- o backend esta na pasta `server/`;
+- ambos sao servidos por um unico processo ao executar `npm start`.
+
+Depois de iniciar o servidor, acesse:
+
+- `http://localhost:3010/` se `PORT=3010`
+
 ## Scripts
-- `npm start` inicia o servidor
-- `npm run migrate` executa a criacao/ajuste das tabelas
-- `npm run seed:marketplaces` popula marketplaces padrao
 
-## Estrategia de Branches
+- `npm start`: inicia a aplicacao
+- `npm run migrate`: cria/atualiza tabelas e indices
+- `npm run seed:marketplaces`: cadastra marketplaces padrao
 
-### `main`
-Branch estavel de producao.
+## Documentacao principal
 
-Use para:
-- versoes prontas
-- tags oficiais
-- deploy
+A documentacao consolidada fica em `docs/`:
 
-### `develop`
-Branch de integracao de desenvolvimento.
+- `docs/arquitetura.md`
+- `docs/banco-de-dados.md`
+- `docs/regras-de-preco.md`
+- `docs/roadmap.md`
+- `docs/api.md`
 
-Use para:
-- consolidar features aprovadas
-- testar integracao antes de promover para `main`
+Documentos historicos preservados ficam em `docs/legado/`.
 
-### `feature/*`
-Branches de desenvolvimento de funcionalidades.
+## Observacoes
 
-Exemplo:
-- `feature/multi-marketplace`
-
-Fluxo recomendado:
-1. Crie uma branch a partir de `develop`
-2. Desenvolva a funcionalidade
-3. Envie para o GitHub
-4. Abra PR para `develop`
-5. Depois de validado, promova `develop` para `main`
-
-## Convencao recomendada
-- `main` = estavel
-- `develop` = desenvolvimento integrado
-- `feature/*` = novas funcionalidades
-- `fix/*` = correcoes
-- `hotfix/*` = correcoes urgentes em producao
-
-## Versao atual
-- Tag: `v1.0`
-
-## Documentos auxiliares
-- [SETUP.md](/c:/Users/cim_6/Desktop/precificador-saas/SETUP.md)
-- [CHANGELOG.md](/c:/Users/cim_6/Desktop/precificador-saas/CHANGELOG.md)
+- Este passo reorganiza apenas a documentacao.
+- Inconsistencias entre arquivos antigos e o estado atual do codigo foram registradas nos documentos, sem alterar regras de negocio.

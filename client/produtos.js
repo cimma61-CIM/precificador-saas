@@ -11,6 +11,11 @@ let inlineTimers = new Map()
 let inlineSaving = new Set()
 let ordenacaoMarketplaces = 'nome'
 let autocompleteTimer = null
+let buscaProdutosTimer = null
+let selectedMarketplacesState = []
+let produtoSelecionadoId = null
+let simulacaoAberta = false
+let concorrenteInputs = new Map()
 
 function getToken() {
   return localStorage.getItem('token')
@@ -128,6 +133,97 @@ function formatarPercentual(valor) {
   return `${(Number(valor || 0) * 100).toFixed(2)}%`
 }
 
+function formatarPercentualParaInput(valor) {
+  return (Number(valor || 0) * 100).toFixed(2).replace(/\.00$/, '')
+}
+
+function normalizarPercentualInput(valor) {
+  const numero = Number(String(valor || '').replace(',', '.'))
+
+  if (Number.isNaN(numero) || numero < 0) {
+    return 0
+  }
+
+  return numero > 1 ? numero / 100 : numero
+}
+
+function normalizarValorMonetarioInput(valor) {
+  const numero = Number(String(valor || '').replace(',', '.'))
+
+  if (Number.isNaN(numero) || numero < 0) {
+    return 0
+  }
+
+  return numero
+}
+
+function calcularPrecoSimulado(custo, margem, taxa) {
+  const custoBase = normalizarValorMonetarioInput(custo)
+  const margemDesejada = normalizarPercentualInput(margem)
+  const taxaPercentual = normalizarPercentualInput(taxa.taxa_percentual)
+  const taxaFixa = normalizarValorMonetarioInput(taxa.taxa_fixa)
+  const freteMedio = normalizarValorMonetarioInput(taxa.frete_medio)
+  const indiceExtra = normalizarPercentualInput(taxa.indice_extra_percentual)
+  const imposto = normalizarPercentualInput(taxa.imposto_percentual)
+  const taxasTotaisPercentuais = taxaPercentual + imposto + indiceExtra
+  const divisorMargem = 1 - taxasTotaisPercentuais - margemDesejada
+
+  if (divisorMargem <= 0) {
+    return {
+      preco_sugerido: 0,
+      margem_real: 0,
+      erro: 'Percentuais e margem somam 100% ou mais'
+    }
+  }
+
+  const preco = (custoBase + freteMedio + taxaFixa) / divisorMargem
+  const valorTaxa = preco * taxaPercentual
+  const valorIndiceExtra = preco * indiceExtra
+  const valorImposto = preco * imposto
+  const lucro = preco - custoBase - freteMedio - taxaFixa - valorTaxa - valorIndiceExtra - valorImposto
+
+  return {
+    preco_sugerido: Number(preco.toFixed(2)),
+    margem_real: preco > 0 ? Number((lucro / preco).toFixed(4)) : 0,
+    erro: ''
+  }
+}
+
+function getConcorrenteKey(produtoId, marketplaceId) {
+  return `${produtoId}:${marketplaceId}`
+}
+
+function calcularResultadoConcorrente(custo, precoConcorrente, taxa) {
+  const custoBase = normalizarValorMonetarioInput(custo)
+  const preco = normalizarValorMonetarioInput(precoConcorrente)
+  const taxaPercentual = normalizarPercentualInput(taxa.taxa_percentual)
+  const taxaFixa = normalizarValorMonetarioInput(taxa.taxa_fixa)
+  const freteMedio = normalizarValorMonetarioInput(taxa.frete_medio)
+  const indiceExtra = normalizarPercentualInput(taxa.indice_extra_percentual)
+  const imposto = normalizarPercentualInput(taxa.imposto_percentual)
+
+  if (!preco) {
+    return {
+      lucro: 0,
+      margem: 0,
+      possuiValor: false,
+      prejuizo: false
+    }
+  }
+
+  const valorTaxa = preco * taxaPercentual
+  const valorIndiceExtra = preco * indiceExtra
+  const valorImposto = preco * imposto
+  const lucro = preco - custoBase - freteMedio - taxaFixa - valorTaxa - valorIndiceExtra - valorImposto
+
+  return {
+    lucro: Number(lucro.toFixed(2)),
+    margem: preco > 0 ? Number((lucro / preco).toFixed(4)) : 0,
+    possuiValor: true,
+    prejuizo: lucro < 0
+  }
+}
+
 function calcularPrecoDireto(custo, margemDesejada) {
   const custoNumero = Number(custo || 0)
   const margemNumero = Number(margemDesejada || 0)
@@ -214,40 +310,41 @@ async function apiFetch(url, options = {}) {
   return resposta.json()
 }
 
-function renderMarketplacesCheckboxes() {
-  const container = document.getElementById('marketplaces-checkboxes')
-  container.innerHTML = ''
+function getMarketplaceById(marketplaceId) {
+  return marketplacesCache.find((item) => item.id === Number(marketplaceId))
+}
 
-  if (!marketplacesCache.length) {
-    container.innerHTML = '<span class="text-danger">Nenhum marketplace cadastrado.</span>'
-    return
-  }
+function collectSelectedMarketplacesFromTable() {
+  return Array.from(document.querySelectorAll('[data-selected-marketplace-id]'))
+    .map((row) => ({
+      id: Number(row.dataset.selectedMarketplaceId),
+      margem: row.querySelector('[data-marketplace-margin-id]')?.value || obterMargemDefault() || 0
+    }))
+    .filter((item) => Number.isInteger(item.id) && item.id > 0)
+}
 
-  marketplacesCache.forEach((marketplace) => {
-    container.innerHTML += `
-      <label class="checkbox-card">
-        <input type="checkbox" name="marketplaces" value="${marketplace.id}">
-        <span>${marketplace.nome}</span>
-      </label>
-    `
-  })
+function syncSelectedMarketplacesState() {
+  selectedMarketplacesState = collectSelectedMarketplacesFromTable()
+}
 
-  document.querySelectorAll('input[name="marketplaces"]').forEach((checkbox) => {
-    checkbox.addEventListener('change', renderCamposMargemMarketplaces)
-  })
+function renderMarketplaceSelectOptions() {
+  const select = document.getElementById('marketplace-select')
+  const selectedIds = new Set(selectedMarketplacesState.map((item) => Number(item.id)))
+
+  select.innerHTML = '<option value="">Selecione um marketplace</option>'
+
+  marketplacesCache
+    .filter((marketplace) => !selectedIds.has(Number(marketplace.id)))
+    .forEach((marketplace) => {
+      select.innerHTML += `<option value="${marketplace.id}">${marketplace.nome}</option>`
+    })
 }
 
 async function loadMarketplaces() {
   const dados = await apiFetch('/marketplaces')
   marketplacesCache = dados.marketplaces
-  renderMarketplacesCheckboxes()
+  renderMarketplaceSelectOptions()
   renderCamposMargemMarketplaces()
-}
-
-function getSelectedMarketplaces() {
-  return Array.from(
-    document.querySelectorAll('input[name="marketplaces"]:checked')
-  ).map((checkbox) => Number(checkbox.value))
 }
 
 function obterMargemDefault() {
@@ -256,22 +353,23 @@ function obterMargemDefault() {
 
 function renderCamposMargemMarketplaces() {
   const container = document.getElementById('marketplaces-margens')
-  const selecionados = getSelectedMarketplaces()
-  const margensExistentes = new Map()
-
-  document.querySelectorAll('[data-marketplace-margin-id]').forEach((input) => {
-    margensExistentes.set(Number(input.dataset.marketplaceMarginId), input.value)
-  })
+  const margensExistentes = new Map(selectedMarketplacesState.map((item) => [Number(item.id), item.margem]))
 
   container.innerHTML = ''
 
-  if (!selecionados.length) {
-    container.innerHTML = '<span class="text-soft">Selecione marketplaces para definir margens especificas.</span>'
+  if (!selectedMarketplacesState.length) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="3"><span class="text-soft">Adicione marketplaces para definir margens especificas.</span></td>
+      </tr>
+    `
+    renderMarketplaceSelectOptions()
     return
   }
 
-  selecionados.forEach((marketplaceId) => {
-    const marketplace = marketplacesCache.find((item) => item.id === marketplaceId)
+  selectedMarketplacesState.forEach((selecionado) => {
+    const marketplaceId = Number(selecionado.id)
+    const marketplace = getMarketplaceById(marketplaceId)
     const valor = margensExistentes.get(marketplaceId) ?? obterMargemDefault()
 
     if (!marketplace) {
@@ -279,32 +377,63 @@ function renderCamposMargemMarketplaces() {
     }
 
     container.innerHTML += `
-      <div class="field">
-        <label for="marketplace-margem-${marketplace.id}">${marketplace.nome}</label>
-        <input
-          id="marketplace-margem-${marketplace.id}"
-          data-marketplace-margin-id="${marketplace.id}"
-          type="number"
-          step="0.0001"
-          value="${valor}"
-          placeholder="Ex.: 0.20"
-        >
-      </div>
+      <tr data-selected-marketplace-id="${marketplace.id}">
+        <td>${marketplace.nome}</td>
+        <td>
+          <input
+            id="marketplace-margem-${marketplace.id}"
+            data-marketplace-margin-id="${marketplace.id}"
+            type="number"
+            step="0.0001"
+            value="${valor}"
+            placeholder="Ex.: 0.20"
+          >
+        </td>
+        <td>
+          <button type="button" class="button-danger" onclick="removerMarketplaceSelecionado(${marketplace.id})">Remover</button>
+        </td>
+      </tr>
     `
   })
+
+  renderMarketplaceSelectOptions()
 }
 
 function getPayloadMarketplaces() {
-  return getSelectedMarketplaces().map((marketplaceId) => {
-    const margemInput = document.querySelector(
-      `[data-marketplace-margin-id="${marketplaceId}"]`
-    )
+  return collectSelectedMarketplacesFromTable()
+}
 
-    return {
-      id: marketplaceId,
-      margem: margemInput ? margemInput.value || obterMargemDefault() || 0 : 0
-    }
+function adicionarMarketplaceSelecionado() {
+  syncSelectedMarketplacesState()
+  const select = document.getElementById('marketplace-select')
+  const marketplaceId = Number(select.value)
+
+  if (!Number.isInteger(marketplaceId) || marketplaceId <= 0) {
+    setFeedback('Selecione um marketplace para adicionar.', 'text-danger')
+    return
+  }
+
+  if (selectedMarketplacesState.some((item) => Number(item.id) === marketplaceId)) {
+    setFeedback('Esse marketplace ja foi adicionado.', 'text-danger')
+    return
+  }
+
+  selectedMarketplacesState.push({
+    id: marketplaceId,
+    margem: obterMargemDefault()
   })
+
+  renderCamposMargemMarketplaces()
+  select.value = ''
+  setFeedback('', '')
+}
+
+function removerMarketplaceSelecionado(marketplaceId) {
+  syncSelectedMarketplacesState()
+  selectedMarketplacesState = selectedMarketplacesState.filter(
+    (item) => Number(item.id) !== Number(marketplaceId)
+  )
+  renderCamposMargemMarketplaces()
 }
 
 function ordenarMarketplaces(marketplaces) {
@@ -329,6 +458,185 @@ function getStatusBadge(marketplace) {
   }
 
   return `<span class="${classes[marketplace.status] || 'status-badge'}">${marketplace.status_label}</span>`
+}
+
+function obterProdutoSelecionado() {
+  return produtosCache.find((item) => item.id === Number(produtoSelecionadoId)) || null
+}
+
+function abrirSimulacao() {
+  if (!obterProdutoSelecionado()) {
+    return
+  }
+
+  simulacaoAberta = true
+  renderConsultaRapida()
+}
+
+function fecharSimulacao() {
+  simulacaoAberta = false
+  renderConsultaRapida()
+}
+
+function selecionarProdutoParaConsulta(produtoId) {
+  produtoSelecionadoId = Number(produtoId)
+  simulacaoAberta = false
+  renderConsultaRapida()
+}
+
+function renderConsultaRapida() {
+  const titulo = document.getElementById('consulta-produto-titulo')
+  const vazio = document.getElementById('consulta-vazia')
+  const conteudo = document.getElementById('consulta-conteudo')
+  const tabelaConsulta = document.getElementById('consulta-marketplaces')
+  const painelSimulacao = document.getElementById('painel-simulacao')
+  const tabelaSimulacao = document.getElementById('simulacao-marketplaces')
+  const botaoAbrir = document.getElementById('abrir-simulacao')
+  const produto = obterProdutoSelecionado()
+
+  if (!produto) {
+    titulo.textContent = 'Selecione um produto na tabela para consultar os precos por marketplace.'
+    vazio.classList.remove('hidden')
+    conteudo.classList.add('hidden')
+    painelSimulacao.classList.add('hidden')
+    tabelaConsulta.innerHTML = ''
+    tabelaSimulacao.innerHTML = ''
+    botaoAbrir.disabled = true
+    return
+  }
+
+  botaoAbrir.disabled = !produto.marketplaces.length
+  titulo.textContent = `${produto.nome} | Custo ${formatarMoeda(produto.custo)} | Venda direta ${formatarMoeda(produto.preco_venda)}`
+  vazio.classList.add('hidden')
+  conteudo.classList.remove('hidden')
+
+  if (!produto.marketplaces.length) {
+    tabelaConsulta.innerHTML = `
+      <tr>
+        <td colspan="4"><span class="text-soft">Esse produto ainda nao possui marketplaces vinculados.</span></td>
+      </tr>
+    `
+    painelSimulacao.classList.add('hidden')
+    tabelaSimulacao.innerHTML = ''
+    return
+  }
+
+  tabelaConsulta.innerHTML = ordenarMarketplaces(produto.marketplaces)
+    .map((marketplace) => {
+      const concorrenteKey = getConcorrenteKey(produto.id, marketplace.id)
+      const valorConcorrente = concorrenteInputs.get(concorrenteKey) || ''
+      const analise = marketplace.taxa_configurada
+        ? calcularResultadoConcorrente(produto.custo, valorConcorrente, marketplace)
+        : null
+      const lucroConcorrente = !marketplace.taxa_configurada
+        ? '<span class="text-soft">Sem taxa configurada</span>'
+        : !analise.possuiValor
+          ? '<span class="text-soft">Informe um preco</span>'
+          : `<span class="${analise.prejuizo ? 'text-danger' : 'text-success'}">${formatarMoeda(analise.lucro)}</span>`
+      const margemConcorrente = !marketplace.taxa_configurada
+        ? '<span class="text-soft">-</span>'
+        : !analise.possuiValor
+          ? '<span class="text-soft">-</span>'
+          : `<span class="${analise.prejuizo ? 'text-danger' : 'text-success'}">${formatarPercentual(analise.margem)}</span>`
+
+      return `
+        <tr class="${analise?.prejuizo ? 'marketplace-loss-row' : ''}">
+          <td>${marketplace.nome}</td>
+          <td>${formatarMoeda(marketplace.preco_calculado)}</td>
+          <td>${formatarPercentual(marketplace.margem_real || marketplace.margem || 0)}</td>
+          <td>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value="${valorConcorrente}"
+              placeholder="Ex.: 24.90"
+              data-competitor-product-id="${produto.id}"
+              data-competitor-marketplace-id="${marketplace.id}"
+              ${marketplace.taxa_configurada ? '' : 'disabled'}
+            >
+          </td>
+          <td>${lucroConcorrente}</td>
+          <td>${margemConcorrente}</td>
+          <td>${getStatusBadge(marketplace)}</td>
+        </tr>
+      `
+    })
+    .join('')
+
+  if (!simulacaoAberta) {
+    painelSimulacao.classList.add('hidden')
+    tabelaSimulacao.innerHTML = ''
+    return
+  }
+
+  painelSimulacao.classList.remove('hidden')
+  tabelaSimulacao.innerHTML = ordenarMarketplaces(produto.marketplaces)
+    .map((marketplace) => {
+      const resultado = marketplace.taxa_configurada
+        ? calcularPrecoSimulado(produto.custo, marketplace.margem, marketplace)
+        : null
+      const statusResultado = !marketplace.taxa_configurada
+        ? '<span class="text-soft">Sem taxa configurada</span>'
+        : resultado.erro
+          ? `<span class="text-danger">${resultado.erro}</span>`
+          : formatarMoeda(resultado.preco_sugerido)
+
+      const margemResultado = !marketplace.taxa_configurada
+        ? '<span class="text-soft">-</span>'
+        : resultado.erro
+          ? '<span class="text-danger">Invalida</span>'
+          : formatarPercentual(resultado.margem_real)
+
+      return `
+        <tr data-sim-row-id="${marketplace.id}">
+          <td>${marketplace.nome}</td>
+          <td>
+            <input
+              type="number"
+              step="0.01"
+              value="${formatarPercentualParaInput(marketplace.taxa_percentual)}"
+              data-sim-field="taxa_percentual"
+              data-sim-marketplace-id="${marketplace.id}"
+              ${marketplace.taxa_configurada ? '' : 'disabled'}
+            >
+          </td>
+          <td>
+            <input
+              type="number"
+              step="0.01"
+              value="${Number(marketplace.frete_medio || 0).toFixed(2)}"
+              data-sim-field="frete_medio"
+              data-sim-marketplace-id="${marketplace.id}"
+              ${marketplace.taxa_configurada ? '' : 'disabled'}
+            >
+          </td>
+          <td>
+            <input
+              type="number"
+              step="0.01"
+              value="${formatarPercentualParaInput(marketplace.indice_extra_percentual)}"
+              data-sim-field="indice_extra_percentual"
+              data-sim-marketplace-id="${marketplace.id}"
+              ${marketplace.taxa_configurada ? '' : 'disabled'}
+            >
+          </td>
+          <td>
+            <input
+              type="number"
+              step="0.01"
+              value="${formatarPercentualParaInput(marketplace.imposto_percentual)}"
+              data-sim-field="imposto_percentual"
+              data-sim-marketplace-id="${marketplace.id}"
+              ${marketplace.taxa_configurada ? '' : 'disabled'}
+            >
+          </td>
+          <td data-sim-price-id="${marketplace.id}">${statusResultado}</td>
+          <td data-sim-margin-id="${marketplace.id}">${margemResultado}</td>
+        </tr>
+      `
+    })
+    .join('')
 }
 
 function marcarInlinePendente(produtoId, marketplaceId, pendente) {
@@ -515,6 +823,11 @@ async function excluirProduto(id) {
       limparFormulario()
     }
 
+    if (Number(produtoSelecionadoId) === Number(id)) {
+      produtoSelecionadoId = null
+      simulacaoAberta = false
+    }
+
     setFeedback('Produto removido com sucesso.', 'text-success')
     await carregarProdutos(paginaAtual, buscaAtual)
   } catch (error) {
@@ -659,24 +972,12 @@ function preencherFormulario(produto) {
   document.getElementById('estoque_max').value = produto.estoque_max || ''
   document.getElementById('localizacao').value = produto.localizacao || ''
   document.getElementById('descricao').value = produto.descricao || ''
-
-  document.querySelectorAll('input[name="marketplaces"]').forEach((checkbox) => {
-    checkbox.checked = produto.marketplaces.some(
-      (marketplace) => marketplace.id === Number(checkbox.value)
-    )
-  })
+  selectedMarketplacesState = (produto.marketplaces || []).map((marketplace) => ({
+    id: Number(marketplace.id),
+    margem: marketplace.margem
+  }))
 
   renderCamposMargemMarketplaces()
-
-  produto.marketplaces.forEach((marketplace) => {
-    const input = document.querySelector(
-      `[data-marketplace-margin-id="${marketplace.id}"]`
-    )
-
-    if (input) {
-      input.value = marketplace.margem
-    }
-  })
 
   atualizarTituloFormulario()
   atualizarLogicaPrecoMargem()
@@ -710,13 +1011,19 @@ async function carregarProdutos(page = 1, busca = '') {
           <td colspan="10">Nenhum produto cadastrado.</td>
         </tr>
       `
+      if (buscaAtual || produtoSelecionadoId) {
+        renderConsultaRapida()
+      }
       criarPaginacao(dados.totalPages)
       return
     }
 
     dados.produtos.forEach((produto) => {
       tabela.innerHTML += `
-        <tr class="${produtosDestacados.has(Number(produto.id)) ? 'row-highlight' : ''}">
+        <tr
+          class="${produtosDestacados.has(Number(produto.id)) ? 'row-highlight' : ''} ${Number(produtoSelecionadoId) === Number(produto.id) ? 'row-selected' : ''}"
+          data-product-row-id="${produto.id}"
+        >
           <td>${produto.id}</td>
           <td>${produto.nome}</td>
           <td>${renderMarketplaces(produto)}</td>
@@ -749,6 +1056,12 @@ async function carregarProdutos(page = 1, busca = '') {
       `
     })
 
+    if (produtoSelecionadoId && !produtosCache.some((item) => Number(item.id) === Number(produtoSelecionadoId))) {
+      produtoSelecionadoId = null
+      simulacaoAberta = false
+    }
+
+    renderConsultaRapida()
     criarPaginacao(dados.totalPages)
   } catch (error) {
     setFeedback(error.message, 'text-danger')
@@ -785,10 +1098,7 @@ function limparFormulario() {
   document.getElementById('estoque_max').value = ''
   document.getElementById('localizacao').value = ''
   document.getElementById('descricao').value = ''
-
-  document.querySelectorAll('input[name="marketplaces"]').forEach((checkbox) => {
-    checkbox.checked = false
-  })
+  selectedMarketplacesState = []
 
   document.getElementById('preco_venda').readOnly = false
   document.getElementById('margem_desejada').disabled = false
@@ -874,12 +1184,109 @@ function handleCliqueSugestao(event) {
   setFeedback('Sugestao preenchida com nome, barcode, NCM e custo. Voce ainda pode ajustar os dados.', 'text-success')
 }
 
+function handleSelecaoProdutoTabela(event) {
+  const elementoInterativo = event.target.closest('button, input, select, textarea, a')
+
+  if (elementoInterativo) {
+    return
+  }
+
+  const row = event.target.closest('[data-product-row-id]')
+
+  if (!row) {
+    return
+  }
+
+  selecionarProdutoParaConsulta(Number(row.dataset.productRowId))
+}
+
+function handleSimulacaoInput(event) {
+  const input = event.target
+
+  if (!input.matches('[data-sim-field][data-sim-marketplace-id]')) {
+    return
+  }
+
+  const produto = obterProdutoSelecionado()
+
+  if (!produto) {
+    return
+  }
+
+  const marketplaceId = Number(input.dataset.simMarketplaceId)
+  const marketplace = (produto.marketplaces || []).find((item) => item.id === marketplaceId)
+
+  if (!marketplace || !marketplace.taxa_configurada) {
+    return
+  }
+
+  const row = input.closest('[data-sim-row-id]')
+
+  if (!row) {
+    return
+  }
+
+  const taxa = {
+    taxa_percentual: row.querySelector('[data-sim-field="taxa_percentual"]')?.value || 0,
+    taxa_fixa: marketplace.taxa_fixa || 0,
+    frete_medio: row.querySelector('[data-sim-field="frete_medio"]')?.value || 0,
+    indice_extra_percentual:
+      row.querySelector('[data-sim-field="indice_extra_percentual"]')?.value || 0,
+    imposto_percentual: row.querySelector('[data-sim-field="imposto_percentual"]')?.value || 0
+  }
+
+  const resultado = calcularPrecoSimulado(produto.custo, marketplace.margem, taxa)
+  const precoCell = row.querySelector(`[data-sim-price-id="${marketplaceId}"]`)
+  const margemCell = row.querySelector(`[data-sim-margin-id="${marketplaceId}"]`)
+
+  if (resultado.erro) {
+    precoCell.innerHTML = `<span class="text-danger">${resultado.erro}</span>`
+    margemCell.innerHTML = '<span class="text-danger">Invalida</span>'
+    return
+  }
+
+  precoCell.textContent = formatarMoeda(resultado.preco_sugerido)
+  margemCell.textContent = formatarPercentual(resultado.margem_real)
+}
+
+function handleConcorrenteInput(event) {
+  const input = event.target
+
+  if (!input.matches('[data-competitor-product-id][data-competitor-marketplace-id]')) {
+    return
+  }
+
+  const produtoId = Number(input.dataset.competitorProductId)
+  const marketplaceId = Number(input.dataset.competitorMarketplaceId)
+  const key = getConcorrenteKey(produtoId, marketplaceId)
+
+  if (input.value.trim()) {
+    concorrenteInputs.set(key, input.value)
+  } else {
+    concorrenteInputs.delete(key)
+  }
+
+  const produtoSelecionado = obterProdutoSelecionado()
+
+  if (produtoSelecionado && Number(produtoSelecionado.id) === produtoId) {
+    renderConsultaRapida()
+  }
+}
+
 document
   .getElementById('busca-produto')
   .addEventListener('input', function () {
-    buscaAtual = this.value
-    paginaAtual = 1
-    carregarProdutos(paginaAtual, buscaAtual)
+    const valor = this.value
+
+    if (buscaProdutosTimer) {
+      clearTimeout(buscaProdutosTimer)
+    }
+
+    buscaProdutosTimer = window.setTimeout(() => {
+      buscaAtual = valor
+      paginaAtual = 1
+      carregarProdutos(paginaAtual, buscaAtual)
+    }, 250)
   })
 
 document
@@ -897,6 +1304,8 @@ document.getElementById('margem_desejada').addEventListener('input', function ()
 })
 document.getElementById('nome').addEventListener('input', handleNomeProdutoInput)
 document.getElementById('produto-sugestoes').addEventListener('click', handleCliqueSugestao)
+document.getElementById('abrir-simulacao').addEventListener('click', abrirSimulacao)
+document.getElementById('fechar-simulacao').addEventListener('click', fecharSimulacao)
 document.getElementById('nome').addEventListener('blur', function () {
   window.setTimeout(esconderSugestoesProduto, 150)
 })
@@ -908,6 +1317,9 @@ document.getElementById('nome').addEventListener('focus', function () {
 
 document.getElementById('tabela-produtos').addEventListener('input', handleInlineInputChange)
 document.getElementById('tabela-produtos').addEventListener('keydown', handleInlineKeydown)
+document.getElementById('tabela-produtos').addEventListener('click', handleSelecaoProdutoTabela)
+document.getElementById('consulta-marketplaces').addEventListener('input', handleConcorrenteInput)
+document.getElementById('simulacao-marketplaces').addEventListener('input', handleSimulacaoInput)
 
 Promise.all([loadMarketplaces(), carregarProdutos()]).catch((error) => {
   setFeedback(error.message, 'text-danger')

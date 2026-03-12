@@ -12,24 +12,40 @@
     <div class="page-header">
       <div>
         <h1>Marketplaces</h1>
-        <p>Gerencie o catálogo de canais usados nas taxas e nos produtos.</p>
+        <p>Gerencie o catalogo de canais usados nas taxas e nos produtos.</p>
       </div>
     </div>
 
     <div class="card">
-      <h2>Novo marketplace</h2>
-      <p class="card-subtitle">Cadastre apenas uma vez cada canal de venda.</p>
+      <h2 id="marketplace-form-title">Novo marketplace</h2>
+      <p class="card-subtitle">Cadastre apenas uma vez cada canal de venda e reutilize o slug oficial.</p>
 
       <form id="marketplace-form">
+        <input id="marketplace-id" type="hidden">
+
         <div class="form-grid">
-          <div class="field">
+          <div class="field autocomplete-field">
             <label for="marketplace-nome">Nome do marketplace</label>
-            <input id="marketplace-nome" placeholder="Ex.: Mercado Livre" required>
+            <input id="marketplace-nome" placeholder="Ex.: Mercado Livre" required autocomplete="off" list="marketplace-sugestoes">
+            <datalist id="marketplace-sugestoes">
+              <option value="Mercado Livre"></option>
+              <option value="Shopee"></option>
+              <option value="Amazon"></option>
+              <option value="Magalu"></option>
+              <option value="TikTok"></option>
+              <option value="Shein"></option>
+              <option value="Temu"></option>
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="marketplace-slug">Slug</label>
+            <input id="marketplace-slug" placeholder="mercado_livre" required>
           </div>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="button-primary">Salvar Marketplace</button>
+          <button id="marketplace-submit-button" type="submit" class="button-primary">Salvar Marketplace</button>
+          <button id="marketplace-cancel-button" type="button" class="button-secondary hidden" onclick="cancelarEdicaoMarketplace()">Cancelar edicao</button>
         </div>
       </form>
 
@@ -37,11 +53,12 @@
     </div>
 
     <div class="card table-card">
-      <div class="section-head">
+      <div class="toolbar">
         <div>
           <h2>Marketplaces cadastrados</h2>
           <p class="card-subtitle">Lista oficial usada no cadastro de taxas e produtos.</p>
         </div>
+        <input id="marketplace-busca" class="search-input" placeholder="Buscar marketplace por nome ou slug">
         <button type="button" class="button-secondary" onclick="loadMarketplaces()">Atualizar</button>
       </div>
 
@@ -51,6 +68,8 @@
             <tr>
               <th>Nome</th>
               <th>Slug</th>
+              <th>Status</th>
+              <th>Acoes</th>
             </tr>
           </thead>
           <tbody id="marketplaces-tabela"></tbody>

@@ -63,6 +63,7 @@ async function recalcularProdutos(usuarioId, produtoIds = []) {
         tm.taxa_percentual,
         tm.taxa_fixa,
         tm.frete_medio,
+        COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
         tm.imposto_percentual
       FROM taxas_marketplace tm
       WHERE tm.usuario_id = $1

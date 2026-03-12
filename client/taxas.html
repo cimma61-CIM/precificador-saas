@@ -12,13 +12,13 @@
     <div class="page-header">
       <div>
         <h1>Taxas Marketplace</h1>
-        <p>Configure custos variáveis por canal para sustentar a precificação automática.</p>
+        <p>Configure custos variaveis por canal para sustentar a precificacao automatica.</p>
       </div>
     </div>
 
     <div class="card">
       <h2>Nova taxa</h2>
-      <p class="card-subtitle">Defina comissão, frete médio e imposto por marketplace.</p>
+      <p class="card-subtitle">Defina comissao, frete medio, indices extras e imposto por marketplace.</p>
 
       <form id="taxa-form">
         <input type="hidden" id="taxa-id">
@@ -39,8 +39,13 @@
             <input id="taxa-fixa" type="number" step="0.01" placeholder="Ex.: 2.50" required>
           </div>
           <div class="field">
-            <label for="frete-medio">Frete médio</label>
+            <label for="frete-medio">Frete medio</label>
             <input id="frete-medio" type="number" step="0.01" placeholder="Ex.: 8.00 (opcional)">
+          </div>
+          <div class="field">
+            <label for="indice-extra-percentual">Indices extras (%)</label>
+            <input id="indice-extra-percentual" type="text" placeholder="Ex.: 5 + 2.5 + 1 (campanha + seguranca + operacao)">
+            <small class="field-help">Use + para separar os percentuais. Exemplo: 5 + 2.5 + 1</small>
           </div>
           <div class="field">
             <label for="imposto-percentual">Imposto percentual</label>
@@ -50,7 +55,7 @@
 
         <div class="form-actions">
           <button type="submit" id="submit-button" class="button-primary">Salvar Taxa</button>
-          <button type="button" class="button-secondary" onclick="cancelEdit()">Cancelar edição</button>
+          <button type="button" class="button-secondary" onclick="cancelEdit()">Cancelar edicao</button>
         </div>
       </form>
 
@@ -61,7 +66,7 @@
       <div class="section-head">
         <div>
           <h2>Taxas cadastradas</h2>
-          <p class="card-subtitle">Tabela base para cálculo e recálculo de preços.</p>
+          <p class="card-subtitle">Tabela base para calculo e recalculo de precos.</p>
         </div>
         <button type="button" class="button-secondary" onclick="loadTaxas()">Atualizar</button>
       </div>
@@ -73,9 +78,10 @@
               <th>Marketplace</th>
               <th>Taxa %</th>
               <th>Taxa fixa</th>
-              <th>Frete médio</th>
+              <th>Frete medio</th>
+              <th>Indices extras</th>
               <th>Imposto</th>
-              <th>Ações</th>
+              <th>Acoes</th>
             </tr>
           </thead>
           <tbody id="taxas-tabela"></tbody>
@@ -85,7 +91,7 @@
   </div>
 </div>
 
-<script src="/js/taxas.js"></script>
+<script src="/js/taxas.js?v=20260311-3"></script>
 
 </body>
 </html>

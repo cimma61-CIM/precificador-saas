@@ -76,7 +76,7 @@ text-decoration:underline;
     <h2>Entrar</h2>
     <form id="login-form">
       <input id="login-email" type="email" placeholder="Email">
-      <input id="login-senha" type="password" placeholder="Senha">
+      <input id="login-senha" type="password" placeholder="Senha" data-password-toggle>
       <button type="submit">Entrar</button>
     </form>
     <a class="auth-link" href="/esqueci-senha.html">Esqueci minha senha</a>
@@ -88,13 +88,14 @@ text-decoration:underline;
     <form id="register-form">
       <input id="register-nome" placeholder="Nome">
       <input id="register-email" type="email" placeholder="Email">
-      <input id="register-senha" type="password" placeholder="Senha">
+      <input id="register-senha" type="password" placeholder="Senha" data-password-toggle>
       <button type="submit">Cadastrar</button>
     </form>
     <div id="register-mensagem" class="mensagem"></div>
   </div>
 </div>
 
+<script src="/js/password-toggle.js"></script>
 <script>
 if (localStorage.getItem("token")) {
   window.location.href = "/dashboard.html"

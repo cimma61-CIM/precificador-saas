@@ -56,6 +56,11 @@ function enriquecerMarketplace(row, custo) {
     slug: row.slug,
     margem: Number(row.margem || 0),
     preco_calculado: Number(row.preco_calculado || 0),
+    taxa_percentual: row.taxa_percentual === null ? null : Number(row.taxa_percentual || 0),
+    taxa_fixa: Number(row.taxa_fixa || 0),
+    frete_medio: Number(row.frete_medio || 0),
+    indice_extra_percentual: Number(row.indice_extra_percentual || 0),
+    imposto_percentual: Number(row.imposto_percentual || 0),
     taxa_configurada: row.taxa_percentual !== null,
     status: 'sem_taxa',
     status_label: 'Sem taxa',
@@ -68,15 +73,18 @@ function enriquecerMarketplace(row, custo) {
   }
 
   try {
+    const taxa = {
+      taxa_percentual: row.taxa_percentual,
+      taxa_fixa: row.taxa_fixa,
+      frete_medio: row.frete_medio,
+      indice_extra_percentual: row.indice_extra_percentual,
+      imposto_percentual: row.imposto_percentual
+    }
+
     const calculo = calcularPrecoComTaxas({
       custo,
       margem: marketplace.margem,
-      taxa: {
-        taxa_percentual: row.taxa_percentual,
-        taxa_fixa: row.taxa_fixa,
-        frete_medio: row.frete_medio,
-        imposto_percentual: row.imposto_percentual
-      }
+      taxa
     })
 
     return {
@@ -229,6 +237,7 @@ async function carregarProdutoComMarketplaces(client, usuarioId, produtoId) {
       tm.taxa_percentual,
       tm.taxa_fixa,
       tm.frete_medio,
+      COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
       tm.imposto_percentual
     FROM produtos_marketplaces pm
     INNER JOIN marketplaces m
@@ -298,6 +307,7 @@ async function recalcularMarketplacesDoProduto(client, usuarioId, produtoId, cus
       tm.taxa_percentual,
       tm.taxa_fixa,
       tm.frete_medio,
+      COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
       tm.imposto_percentual
     FROM produtos_marketplaces pm
     LEFT JOIN taxas_marketplace tm
@@ -318,12 +328,13 @@ async function recalcularMarketplacesDoProduto(client, usuarioId, produtoId, cus
           custo,
           margem: relacao.margem,
           taxa: {
-            taxa_percentual: relacao.taxa_percentual,
-            taxa_fixa: relacao.taxa_fixa,
-            frete_medio: relacao.frete_medio,
-            imposto_percentual: relacao.imposto_percentual
-          }
-        })
+          taxa_percentual: relacao.taxa_percentual,
+          taxa_fixa: relacao.taxa_fixa,
+          frete_medio: relacao.frete_medio,
+          indice_extra_percentual: relacao.indice_extra_percentual,
+          imposto_percentual: relacao.imposto_percentual
+        }
+      })
 
         precoCalculado = calculo.preco_sugerido
       } catch (error) {
@@ -555,7 +566,11 @@ router.get('/buscar', async (req, res) => {
         descricao
       FROM produtos
       WHERE usuario_id = $1
-      AND nome ILIKE $2
+      AND (
+        nome ILIKE $2
+        OR COALESCE(barcode, '') ILIKE $2
+        OR COALESCE(ncm, '') ILIKE $2
+      )
       ORDER BY nome ASC, id DESC
       LIMIT 10
       `,
@@ -585,7 +600,15 @@ router.get('/', async (req, res) => {
   const busca = String(req.query.busca || '').trim()
 
   try {
-    const filtroBusca = busca ? `AND nome ILIKE $2` : ''
+    const filtroBusca = busca
+      ? `
+        AND (
+          nome ILIKE $2
+          OR COALESCE(barcode, '') ILIKE $2
+          OR COALESCE(ncm, '') ILIKE $2
+        )
+      `
+      : ''
     const totalParams = busca ? [usuarioId, `%${busca}%`] : [usuarioId]
 
     const totalResult = await pool.query(
@@ -622,7 +645,17 @@ router.get('/', async (req, res) => {
         margem_desejada
       FROM produtos
       WHERE usuario_id = $1
-      ${busca ? 'AND nome ILIKE $2' : ''}
+      ${
+        busca
+          ? `
+            AND (
+              nome ILIKE $2
+              OR COALESCE(barcode, '') ILIKE $2
+              OR COALESCE(ncm, '') ILIKE $2
+            )
+          `
+          : ''
+      }
       ORDER BY id DESC
       LIMIT $${busca ? 3 : 2} OFFSET $${busca ? 4 : 3}
       `,
@@ -646,6 +679,7 @@ router.get('/', async (req, res) => {
           tm.taxa_percentual,
           tm.taxa_fixa,
           tm.frete_medio,
+          COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
           tm.imposto_percentual,
           p.custo
         FROM produtos_marketplaces pm

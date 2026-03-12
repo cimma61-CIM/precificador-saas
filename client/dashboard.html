@@ -32,7 +32,7 @@
     </div>
 
     <div class="frame-shell">
-      <iframe id="conteudo" src="resumo.html"></iframe>
+      <iframe id="conteudo" src="resumo.html?v=20260311-3"></iframe>
     </div>
   </main>
 </div>
@@ -43,7 +43,7 @@ if (!localStorage.getItem("token")) {
 }
 
 function carregarPagina(pagina, link){
-  document.getElementById("conteudo").src = pagina
+  document.getElementById("conteudo").src = `${pagina}?v=20260311-3`
   document
     .querySelectorAll(".menu a")
     .forEach((item) => item.classList.remove("active"))

@@ -41,12 +41,28 @@
 
 <div class="field">
 <label>Marketplaces</label>
-<div id="marketplaces-checkboxes" class="checkbox-grid"></div>
+<div class="selection-toolbar">
+  <select id="marketplace-select">
+    <option value="">Selecione um marketplace</option>
+  </select>
+  <button type="button" class="button-secondary" onclick="adicionarMarketplaceSelecionado()">Adicionar marketplace</button>
+</div>
 </div>
 
 <div class="field">
-<label>Margem por marketplace</label>
-<div id="marketplaces-margens" class="form-grid"></div>
+<label>Marketplaces selecionados</label>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Marketplace</th>
+        <th>Margem</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody id="marketplaces-margens"></tbody>
+  </table>
+</div>
 </div>
 
 <div class="field">
@@ -74,7 +90,7 @@
     <option value="preco_desc">Ordenar por maior preco</option>
     <option value="margem_desc">Ordenar por melhor margem real</option>
   </select>
-  <input id="busca-produto" class="search-input" placeholder="Buscar produto">
+  <input id="busca-produto" class="search-input" placeholder="Buscar produto por nome, codigo de barras ou NCM">
 </div>
 
 <div class="table-wrap">
@@ -95,6 +111,66 @@
 </thead>
 <tbody id="tabela-produtos"></tbody>
 </table>
+</div>
+</div>
+
+<div class="card">
+<div class="consult-header">
+  <div>
+    <h2>Consulta rapida de preco</h2>
+    <p id="consulta-produto-titulo" class="card-subtitle">Selecione um produto na tabela para consultar os precos por marketplace.</p>
+  </div>
+  <button id="abrir-simulacao" type="button" class="button-secondary" disabled>Simular preco</button>
+</div>
+
+<div id="consulta-vazia" class="empty-state">
+  Clique em um produto da tabela para abrir a consulta e a simulacao temporaria.
+</div>
+
+<div id="consulta-conteudo" class="hidden">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Marketplace</th>
+          <th>Preco sugerido</th>
+          <th>Margem</th>
+          <th>Preco do concorrente</th>
+          <th>Lucro estimado</th>
+          <th>Margem estimada</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="consulta-marketplaces"></tbody>
+    </table>
+  </div>
+
+  <div id="painel-simulacao" class="simulacao-panel hidden">
+    <div class="simulacao-head">
+      <div>
+        <h3>Simulacao de precificacao</h3>
+        <p class="card-subtitle">Ajustes temporarios. Nada sera salvo no banco.</p>
+      </div>
+      <button id="fechar-simulacao" type="button" class="button-secondary">Fechar simulacao</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Marketplace</th>
+            <th>Taxa %</th>
+            <th>Frete</th>
+            <th>Indice extra %</th>
+            <th>Imposto %</th>
+            <th>Preco recalculado</th>
+            <th>Margem real</th>
+          </tr>
+        </thead>
+        <tbody id="simulacao-marketplaces"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 </div>
 

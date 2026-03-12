@@ -31,6 +31,7 @@ async function createTable() {
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         slug VARCHAR(100) NOT NULL UNIQUE,
+        ativo BOOLEAN NOT NULL DEFAULT true,
         criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `)
@@ -43,6 +44,11 @@ async function createTable() {
     await pool.query(`
       ALTER TABLE marketplaces
       ADD COLUMN IF NOT EXISTS slug VARCHAR(100);
+    `)
+
+    await pool.query(`
+      ALTER TABLE marketplaces
+      ADD COLUMN IF NOT EXISTS ativo BOOLEAN NOT NULL DEFAULT true;
     `)
 
     await pool.query(`
@@ -443,6 +449,8 @@ async function createTable() {
         taxa_percentual NUMERIC(10,4) NOT NULL DEFAULT 0,
         taxa_fixa NUMERIC(10,2) NOT NULL DEFAULT 0,
         frete_medio NUMERIC(10,2) NOT NULL DEFAULT 0,
+        indices_extras TEXT NOT NULL DEFAULT '',
+        indice_extra_percentual NUMERIC(10,4) NOT NULL DEFAULT 0,
         imposto_percentual NUMERIC(10,4) NOT NULL DEFAULT 0,
         criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -476,6 +484,21 @@ async function createTable() {
     await pool.query(`
       ALTER TABLE taxas_marketplace
       ADD COLUMN IF NOT EXISTS frete_medio NUMERIC(10,2) NOT NULL DEFAULT 0;
+    `)
+
+    await pool.query(`
+      ALTER TABLE taxas_marketplace
+      ADD COLUMN IF NOT EXISTS indices_extras TEXT NOT NULL DEFAULT '';
+    `)
+
+    await pool.query(`
+      ALTER TABLE taxas_marketplace
+      ADD COLUMN IF NOT EXISTS indice_extra_percentual NUMERIC(10,4) NOT NULL DEFAULT 0;
+    `)
+
+    await pool.query(`
+      ALTER TABLE taxas_marketplace
+      ALTER COLUMN indice_extra_percentual TYPE NUMERIC(10,4);
     `)
 
     await pool.query(`

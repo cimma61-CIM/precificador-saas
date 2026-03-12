@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const pool = require('../db')
 const {
+  calcularIndiceExtraPercentual,
   normalizarPercentual,
   normalizarValorMonetario
 } = require('../services/precoService')
@@ -20,6 +21,8 @@ router.get('/', async (req, res) => {
         tm.taxa_percentual,
         tm.taxa_fixa,
         tm.frete_medio,
+        COALESCE(tm.indices_extras, '') AS indices_extras,
+        COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
         tm.imposto_percentual,
         tm.criado_em
       FROM taxas_marketplace tm
@@ -45,6 +48,8 @@ router.post('/', async (req, res) => {
     taxa_percentual = 0,
     taxa_fixa = 0,
     frete_medio = 0,
+    indices_extras = '',
+    indice_extra_percentual = 0,
     imposto_percentual = 0
   } = req.body
 
@@ -55,6 +60,13 @@ router.post('/', async (req, res) => {
   }
 
   try {
+    const indiceExtraCalculado = String(indices_extras || '').trim()
+      ? calcularIndiceExtraPercentual(indices_extras)
+      : {
+          indicesExtras: '',
+          indiceExtraPercentual: normalizarPercentual(indice_extra_percentual)
+        }
+
     const result = await pool.query(
       `
       INSERT INTO taxas_marketplace (
@@ -63,15 +75,19 @@ router.post('/', async (req, res) => {
         taxa_percentual,
         taxa_fixa,
         frete_medio,
+        indices_extras,
+        indice_extra_percentual,
         imposto_percentual
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING
         id,
         marketplace_id,
         taxa_percentual,
         taxa_fixa,
         frete_medio,
+        indices_extras,
+        indice_extra_percentual,
         imposto_percentual,
         criado_em
       `,
@@ -81,6 +97,8 @@ router.post('/', async (req, res) => {
         normalizarPercentual(taxa_percentual),
         normalizarValorMonetario(taxa_fixa, 'Taxa fixa'),
         normalizarValorMonetario(frete_medio, 'Frete medio'),
+        indiceExtraCalculado.indicesExtras,
+        indiceExtraCalculado.indiceExtraPercentual,
         normalizarPercentual(imposto_percentual)
       ]
     )
@@ -95,6 +113,8 @@ router.post('/', async (req, res) => {
         tm.taxa_percentual,
         tm.taxa_fixa,
         tm.frete_medio,
+        COALESCE(tm.indices_extras, '') AS indices_extras,
+        COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
         tm.imposto_percentual,
         tm.criado_em
       FROM taxas_marketplace tm
@@ -132,6 +152,8 @@ router.put('/:id', async (req, res) => {
     taxa_percentual = 0,
     taxa_fixa = 0,
     frete_medio = 0,
+    indices_extras = '',
+    indice_extra_percentual = 0,
     imposto_percentual = 0
   } = req.body
 
@@ -146,6 +168,13 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
+    const indiceExtraCalculado = String(indices_extras || '').trim()
+      ? calcularIndiceExtraPercentual(indices_extras)
+      : {
+          indicesExtras: '',
+          indiceExtraPercentual: normalizarPercentual(indice_extra_percentual)
+        }
+
     const result = await pool.query(
       `
       UPDATE taxas_marketplace
@@ -154,9 +183,11 @@ router.put('/:id', async (req, res) => {
         taxa_percentual = $2,
         taxa_fixa = $3,
         frete_medio = $4,
-        imposto_percentual = $5
-      WHERE id = $6
-      AND usuario_id = $7
+        indices_extras = $5,
+        indice_extra_percentual = $6,
+        imposto_percentual = $7
+      WHERE id = $8
+      AND usuario_id = $9
       RETURNING id
       `,
       [
@@ -164,6 +195,8 @@ router.put('/:id', async (req, res) => {
         normalizarPercentual(taxa_percentual),
         normalizarValorMonetario(taxa_fixa, 'Taxa fixa'),
         normalizarValorMonetario(frete_medio, 'Frete medio'),
+        indiceExtraCalculado.indicesExtras,
+        indiceExtraCalculado.indiceExtraPercentual,
         normalizarPercentual(imposto_percentual),
         id,
         usuarioId
@@ -184,6 +217,8 @@ router.put('/:id', async (req, res) => {
         tm.taxa_percentual,
         tm.taxa_fixa,
         tm.frete_medio,
+        COALESCE(tm.indices_extras, '') AS indices_extras,
+        COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
         tm.imposto_percentual,
         tm.criado_em
       FROM taxas_marketplace tm

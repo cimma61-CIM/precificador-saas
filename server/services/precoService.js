@@ -41,6 +41,50 @@ function normalizarMarketplace(valor) {
   return slug
 }
 
+function calcularIndiceExtraPercentual(indicesExtras) {
+  const textoOriginal = String(indicesExtras || '').trim()
+
+  if (!textoOriginal) {
+    return {
+      indicesExtras: '',
+      indiceExtraPercentual: 0
+    }
+  }
+
+  const partes = textoOriginal
+    .replace(/[;|/]+/g, '+')
+    .split('+')
+    .map((parte) => parte.trim())
+    .filter(Boolean)
+
+  if (partes.length === 0) {
+    return {
+      indicesExtras: '',
+      indiceExtraPercentual: 0
+    }
+  }
+
+  let total = 0
+  const normalizados = []
+
+  for (const parte of partes) {
+    const valorNormalizado = parte.replace(',', '.')
+    const numero = Number(valorNormalizado)
+
+    if (Number.isNaN(numero) || numero < 0) {
+      throw new Error('Indices extras devem conter apenas percentuais validos separados por +')
+    }
+
+    total += numero / 100
+    normalizados.push(parte)
+  }
+
+  return {
+    indicesExtras: normalizados.join(' + '),
+    indiceExtraPercentual: Number(total.toFixed(4))
+  }
+}
+
 async function buscarTaxaPorMarketplace(usuarioId, marketplace) {
   const marketplaceNormalizado = normalizarMarketplace(marketplace)
 
@@ -55,6 +99,8 @@ async function buscarTaxaPorMarketplace(usuarioId, marketplace) {
       tm.taxa_percentual,
       tm.taxa_fixa,
       tm.frete_medio,
+      COALESCE(tm.indices_extras, '') AS indices_extras,
+      COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
       tm.imposto_percentual,
       tm.criado_em
     FROM taxas_marketplace tm
@@ -78,22 +124,25 @@ function calcularPrecoComTaxas({ custo, margem, taxa, lucro_minimo = 0, lucroMin
     'Lucro minimo'
   )
   const taxaPercentual = normalizarPercentual(taxa.taxa_percentual)
+  const indiceExtraPercentual = normalizarPercentual(taxa.indice_extra_percentual)
   const impostoPercentual = normalizarPercentual(taxa.imposto_percentual)
   const taxaFixa = normalizarValorMonetario(taxa.taxa_fixa, 'Taxa fixa')
   const freteMedio = normalizarValorMonetario(taxa.frete_medio, 'Frete medio')
+  const taxasTotaisPercentuais =
+    taxaPercentual + impostoPercentual + indiceExtraPercentual
 
   const divisorMargem =
-    1 - taxaPercentual - impostoPercentual - margemDesejada
+    1 - taxasTotaisPercentuais - margemDesejada
 
   const divisorLucro =
-    1 - taxaPercentual - impostoPercentual
+    1 - taxasTotaisPercentuais
 
   if (divisorMargem <= 0) {
-    throw new Error('Taxa percentual, imposto e margem nao podem somar 100% ou mais')
+    throw new Error('Taxa percentual, imposto, indice extra e margem nao podem somar 100% ou mais')
   }
 
   if (divisorLucro <= 0) {
-    throw new Error('Taxa percentual e imposto nao podem somar 100% ou mais')
+    throw new Error('Taxa percentual, imposto e indice extra nao podem somar 100% ou mais')
   }
 
   const precoPorMargem =
@@ -104,6 +153,7 @@ function calcularPrecoComTaxas({ custo, margem, taxa, lucro_minimo = 0, lucroMin
 
   const preco = Math.max(precoPorMargem, precoPorLucro)
   const valorTaxaPercentual = preco * taxaPercentual
+  const valorIndiceExtra = preco * indiceExtraPercentual
   const valorImposto = preco * impostoPercentual
   const lucro =
     preco -
@@ -111,6 +161,7 @@ function calcularPrecoComTaxas({ custo, margem, taxa, lucro_minimo = 0, lucroMin
     freteMedio -
     taxaFixa -
     valorTaxaPercentual -
+    valorIndiceExtra -
     valorImposto
 
   return {
@@ -122,6 +173,7 @@ function calcularPrecoComTaxas({ custo, margem, taxa, lucro_minimo = 0, lucroMin
 
 module.exports = {
   buscarTaxaPorMarketplace,
+  calcularIndiceExtraPercentual,
   calcularPrecoComTaxas,
   normalizarMarketplace,
   normalizarPercentual,

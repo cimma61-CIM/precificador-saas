@@ -16,6 +16,26 @@ function formatarPercentual(valor) {
   return `${(Number(valor || 0) * 100).toFixed(2)}%`
 }
 
+function formatarPercentualParaCampo(valor) {
+  const numero = Number(valor || 0)
+
+  if (!numero) {
+    return ''
+  }
+
+  return Number((numero * 100).toFixed(2))
+}
+
+function formatarIndicesExtrasParaTabela(taxa) {
+  const indicesExtras = String(taxa.indices_extras || '').trim()
+
+  if (indicesExtras) {
+    return `${indicesExtras} = ${formatarPercentual(taxa.indice_extra_percentual || 0)}`
+  }
+
+  return formatarPercentual(taxa.indice_extra_percentual || 0)
+}
+
 function setFeedback(mensagem, tipo = '') {
   const feedback = document.getElementById('feedback')
   feedback.className = `feedback ${tipo}`.trim()
@@ -23,8 +43,10 @@ function setFeedback(mensagem, tipo = '') {
 }
 
 async function apiFetch(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
   const resposta = await fetch(url, {
     ...options,
+    cache: method === 'GET' ? 'no-store' : options.cache,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getToken()}`,
@@ -36,13 +58,13 @@ async function apiFetch(url, options = {}) {
     localStorage.removeItem('token')
     localStorage.removeItem('usuario')
     window.top.location.href = '/'
-    throw new Error('Sessão expirada')
+    throw new Error('Sessao expirada')
   }
 
   const dados = await resposta.json()
 
   if (!resposta.ok) {
-    throw new Error(dados.erro || 'Erro na requisição')
+    throw new Error(dados.erro || 'Erro na requisicao')
   }
 
   return dados
@@ -67,6 +89,7 @@ function limparFormulario() {
   document.getElementById('taxa-percentual').value = ''
   document.getElementById('taxa-fixa').value = ''
   document.getElementById('frete-medio').value = ''
+  document.getElementById('indice-extra-percentual').value = ''
   document.getElementById('imposto-percentual').value = ''
   document.getElementById('submit-button').textContent = 'Salvar Taxa'
   taxaEmEdicao = null
@@ -78,6 +101,8 @@ function preencherFormulario(taxa) {
   document.getElementById('taxa-percentual').value = taxa.taxa_percentual
   document.getElementById('taxa-fixa').value = taxa.taxa_fixa
   document.getElementById('frete-medio').value = taxa.frete_medio
+  document.getElementById('indice-extra-percentual').value =
+    taxa.indices_extras || formatarPercentualParaCampo(taxa.indice_extra_percentual)
   document.getElementById('imposto-percentual').value = taxa.imposto_percentual
   document.getElementById('submit-button').textContent = 'Atualizar Taxa'
   taxaEmEdicao = taxa.id
@@ -98,7 +123,7 @@ async function loadTaxas() {
     if (!dados.taxas.length) {
       tabela.innerHTML = `
         <tr>
-          <td colspan="6">Nenhuma taxa cadastrada.</td>
+          <td colspan="7">Nenhuma taxa cadastrada.</td>
         </tr>
       `
       return
@@ -111,6 +136,7 @@ async function loadTaxas() {
           <td>${formatarPercentual(taxa.taxa_percentual)}</td>
           <td>${formatarMoeda(taxa.taxa_fixa)}</td>
           <td>${formatarMoeda(taxa.frete_medio)}</td>
+          <td>${formatarIndicesExtrasParaTabela(taxa)}</td>
           <td>${formatarPercentual(taxa.imposto_percentual)}</td>
           <td>
             <div class="table-actions">
@@ -128,12 +154,15 @@ async function loadTaxas() {
 
 async function createTaxa() {
   const freteMedio = document.getElementById('frete-medio').value || 0
+  const indicesExtras =
+    document.getElementById('indice-extra-percentual').value.trim()
 
   const payload = {
     marketplace_id: document.getElementById('marketplace-id').value,
     taxa_percentual: document.getElementById('taxa-percentual').value,
     taxa_fixa: document.getElementById('taxa-fixa').value,
     frete_medio: freteMedio,
+    indices_extras: indicesExtras,
     imposto_percentual: document.getElementById('imposto-percentual').value
   }
 
@@ -185,7 +214,7 @@ async function deleteTaxa(id) {
 function editTaxa(index) {
   const taxa = taxasCache[index]
   preencherFormulario(taxa)
-  setFeedback('Modo de edição ativado.', 'text-success')
+  setFeedback('Modo de edicao ativado.', 'text-success')
 }
 
 document
