@@ -1,0 +1,14 @@
+# Normalizar finais de linha automaticamente
+* text=auto
+
+# Garantir LF em arquivos de código (bom para projetos Node)
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.sql text eol=lf
+
+# Windows scripts (se existirem)
+*.bat text eol=crlf
+*.ps1 text eol=crlf
