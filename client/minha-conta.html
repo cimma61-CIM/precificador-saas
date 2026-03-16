@@ -37,11 +37,22 @@
           <a class="button-primary" href="/esqueci-senha.html">Alterar senha</a>
         </div>
       </div>
+
+      <div class="card">
+        <h2>Tema da interface</h2>
+        <p class="card-subtitle">Escolha entre o tema claro e escuro. A preferencia fica salva no navegador.</p>
+
+        <div class="form-actions">
+          <button id="tema-claro-button" type="button" class="button-secondary" onclick="setTheme('light')">Claro</button>
+          <button id="tema-escuro-button" type="button" class="button-secondary" onclick="setTheme('dark')">Escuro</button>
+        </div>
+      </div>
     </div>
   </div>
 </main>
 
 <script src="/js/app-api.js"></script>
+<script src="/js/theme.js"></script>
 <script src="/js/app-layout.js"></script>
 <script src="/js/minha-conta.js"></script>
 

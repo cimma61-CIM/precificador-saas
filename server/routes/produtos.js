@@ -111,6 +111,11 @@ function normalizarSku(sku) {
   return valor || null
 }
 
+function normalizarEan(value) {
+  const ean = String(value || '').trim().replace(/\s+/g, '')
+  return ean || null
+}
+
 function gerarSkuAutomatico(produtoId) {
   return `PROD-${String(produtoId).padStart(6, '0')}`
 }
@@ -247,6 +252,7 @@ async function carregarProdutoComMarketplaces(client, usuarioId, produtoId) {
       p.usuario_id,
       p.nome,
       p.sku,
+      COALESCE(NULLIF(TRIM(p.ean), ''), NULLIF(TRIM(p.barcode), '')) AS ean,
       p.barcode,
       p.ncm,
       p.categoria_id,
@@ -331,6 +337,7 @@ async function carregarProdutoLegadoPorId(client, usuarioId, produtoId) {
       p.usuario_id,
       p.nome,
       p.sku,
+      COALESCE(NULLIF(TRIM(p.ean), ''), NULLIF(TRIM(p.barcode), '')) AS ean,
       p.barcode,
       p.ncm,
       p.categoria_id,
@@ -504,6 +511,7 @@ async function salvarProduto(req, res, modo) {
     const {
       nome,
       sku,
+      ean = null,
       barcode = null,
       ncm = null,
       categoria_id,
@@ -535,6 +543,7 @@ async function salvarProduto(req, res, modo) {
 
     const nomeNormalizado = String(nome).trim()
     const skuNormalizado = normalizarSku(sku)
+    const eanNormalizado = normalizarEan(ean ?? barcode)
     const categoriaFoiInformada = categoria_id !== undefined
     const categoriaDeveLimpar =
       categoriaFoiInformada && (categoria_id === null || String(categoria_id).trim() === '')
@@ -586,6 +595,7 @@ async function salvarProduto(req, res, modo) {
           usuario_id,
           nome,
           sku,
+          ean,
           barcode,
           ncm,
           categoria_id,
@@ -601,14 +611,15 @@ async function salvarProduto(req, res, modo) {
           margem,
           margem_desejada
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING id
         `,
         [
           usuarioId,
           nomeNormalizado,
           skuFinal,
-          barcode || null,
+          eanNormalizado,
+          eanNormalizado,
           ncm || null,
           categoriaIdFinal,
           custoNormalizado,
@@ -667,28 +678,30 @@ async function salvarProduto(req, res, modo) {
         SET
           nome = $1,
           sku = $2,
-          barcode = $3,
-          ncm = $4,
-          categoria_id = $5,
-          custo = $6,
-          preco = $7,
-          preco_venda = $8,
-          quantidade = $9,
-          estoque_min = $10,
-          estoque_max = $11,
-          localizacao = $12,
-          descricao = $13,
-          marketplace = $14,
-          margem = $15,
-          margem_desejada = $16
-        WHERE id = $17
-        AND usuario_id = $18
+          ean = $3,
+          barcode = $4,
+          ncm = $5,
+          categoria_id = $6,
+          custo = $7,
+          preco = $8,
+          preco_venda = $9,
+          quantidade = $10,
+          estoque_min = $11,
+          estoque_max = $12,
+          localizacao = $13,
+          descricao = $14,
+          marketplace = $15,
+          margem = $16,
+          margem_desejada = $17
+        WHERE id = $18
+        AND usuario_id = $19
         RETURNING id
         `,
         [
           nomeNormalizado,
           skuFinal,
-          barcode || null,
+          eanNormalizado,
+          eanNormalizado,
           ncm || null,
           categoriaIdFinal,
           custoNormalizado,
@@ -779,6 +792,7 @@ router.get('/buscar', async (req, res) => {
         id,
         nome,
         sku,
+        COALESCE(NULLIF(TRIM(ean), ''), NULLIF(TRIM(barcode), '')) AS ean,
         barcode,
         ncm,
         custo,
@@ -789,6 +803,7 @@ router.get('/buscar', async (req, res) => {
       AND (
         nome ILIKE $2
         OR COALESCE(sku, '') ILIKE $2
+        OR COALESCE(ean, '') ILIKE $2
         OR COALESCE(barcode, '') ILIKE $2
         OR COALESCE(ncm, '') ILIKE $2
       )
@@ -894,6 +909,7 @@ router.get('/', async (req, res) => {
         (
           p.nome ILIKE $${params.length}
           OR COALESCE(p.sku, '') ILIKE $${params.length}
+          OR COALESCE(p.ean, '') ILIKE $${params.length}
           OR COALESCE(p.barcode, '') ILIKE $${params.length}
           OR COALESCE(p.ncm, '') ILIKE $${params.length}
         )
@@ -915,6 +931,7 @@ router.get('/', async (req, res) => {
         p.id,
         p.nome,
         p.sku,
+        COALESCE(NULLIF(TRIM(p.ean), ''), NULLIF(TRIM(p.barcode), '')) AS ean,
         p.barcode,
         p.ncm,
         p.categoria_id,

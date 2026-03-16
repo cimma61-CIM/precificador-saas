@@ -1,4 +1,8 @@
 (function initAppLayout() {
+  if (typeof window.initTheme === 'function') {
+    window.initTheme()
+  }
+
   const pagina = document.body.dataset.appPage
   const mainContent = document.querySelector('.main-content')
 
@@ -23,7 +27,8 @@
       label: 'Produtos',
       children: [
         { id: 'produto-novo', href: '/produtos-novo.html', label: 'Novo produto' },
-        { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos cadastrados' }
+        { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos cadastrados' },
+        { id: 'importar-produtos', href: '/importar-produtos.html', label: 'Importar produtos' }
       ]
     },
     {

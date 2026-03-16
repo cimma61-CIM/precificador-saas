@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importar produtos</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="importar-produtos">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Importar produtos</h1>
+          <p>Envie uma planilha Excel para analisar SKUs existentes e confirmar a importacao somente depois da revisao.</p>
+        </div>
+        <button id="baixar-modelo-button" type="button" class="button-secondary">Baixar modelo Excel</button>
+      </div>
+
+      <div class="card">
+        <h2>Upload da planilha</h2>
+        <p class="card-subtitle">Selecione um arquivo .xlsx com no maximo 50 produtos por importacao.</p>
+
+        <div class="field">
+          <label for="arquivo-importacao">Selecionar planilha (.xlsx)</label>
+          <input type="file" id="arquivo-importacao" accept=".xlsx">
+          <small class="field-help">Maximo de 50 produtos por planilha.</small>
+        </div>
+
+        <div class="form-actions">
+          <button id="analisar-planilha-button" type="button" class="button-primary">Analisar planilha</button>
+          <button id="confirmar-importacao-button" type="button" class="button-secondary hidden">Confirmar importacao</button>
+        </div>
+
+        <div id="importacao-feedback" class="feedback"></div>
+      </div>
+
+      <div id="importacao-analise-card" class="card hidden">
+        <h2>Resultado da analise</h2>
+        <div class="summary-strip">
+          <div class="summary-item">
+            <span>Produtos novos</span>
+            <strong id="analise-novos">0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Produtos existentes</span>
+            <strong id="analise-existentes">0</strong>
+          </div>
+        </div>
+
+        <div id="importacao-skus-wrapper" class="stack-block hidden">
+          <p>Alguns SKUs ja existem no sistema.</p>
+          <div id="importacao-skus-existentes"></div>
+        </div>
+      </div>
+
+      <div id="importacao-resultado-card" class="card hidden">
+        <h2>Importacao concluida</h2>
+        <div class="summary-strip">
+          <div class="summary-item">
+            <span>Produtos importados</span>
+            <strong id="resultado-importados">0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Produtos atualizados</span>
+            <strong id="resultado-atualizados">0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Erros</span>
+            <strong id="resultado-erros">0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/theme.js"></script>
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/importar-produtos.js"></script>
+
+</body>
+</html>
