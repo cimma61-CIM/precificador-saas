@@ -1,10 +1,6 @@
 let taxaEmEdicao = null
 let taxasCache = []
 
-function getToken() {
-  return localStorage.getItem('token')
-}
-
 function formatarMoeda(valor) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -42,45 +38,13 @@ function setFeedback(mensagem, tipo = '') {
   feedback.textContent = mensagem
 }
 
-async function apiFetch(url, options = {}) {
-  const method = (options.method || 'GET').toUpperCase()
-  const resposta = await fetch(url, {
-    ...options,
-    cache: method === 'GET' ? 'no-store' : options.cache,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-      ...(options.headers || {})
-    }
-  })
-
-  if (resposta.status === 401) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
-    window.top.location.href = '/'
-    throw new Error('Sessao expirada')
-  }
-
-  const dados = await resposta.json()
-
-  if (!resposta.ok) {
-    throw new Error(dados.erro || 'Erro na requisicao')
-  }
-
-  return dados
-}
-
 async function loadMarketplaces() {
-  const dados = await apiFetch('/marketplaces')
-  const select = document.getElementById('marketplace-id')
-
-  select.innerHTML = '<option value="">Selecione um marketplace</option>'
-
-  dados.marketplaces.forEach((marketplace) => {
-    select.innerHTML += `
-      <option value="${marketplace.id}">${marketplace.nome}</option>
-    `
-  })
+  const marketplaces = await carregarMarketplacesAtivos()
+  preencherSelectMarketplaces(
+    document.getElementById('marketplace-id'),
+    marketplaces,
+    'Selecione um marketplace'
+  )
 }
 
 function limparFormulario() {

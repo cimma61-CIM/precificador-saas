@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regras de preco</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="regras-preco">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Regras de preco</h1>
+          <p>Area reservada para a evolucao do motor de regras, sem alterar a precificacao atual.</p>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="card stack-block">
+          <div>
+            <h2>Estrutura da area</h2>
+            <p class="card-subtitle">Esta tela organiza o espaco de regras sem mudar a logica que ja esta em producao.</p>
+          </div>
+          <ul class="info-list">
+            <li>As regras de precificacao ainda estao em fase de estruturacao documental.</li>
+            <li>A calculadora atual continua operando a partir de custo, margem e taxas por marketplace.</li>
+            <li>As configuracoes hoje ativas continuam centralizadas em taxas e cadastro de produtos.</li>
+          </ul>
+        </div>
+
+        <div class="card stack-block">
+          <div>
+            <h2>Pontos de configuracao existentes</h2>
+            <p class="card-subtitle">Ate a implementacao do motor, estas telas sustentam a operacao atual.</p>
+          </div>
+          <div class="form-actions">
+            <a class="button-primary" href="/taxas.html">Abrir taxas</a>
+            <a class="button-secondary" href="/produtos-novo.html">Cadastrar produto</a>
+            <a class="button-secondary" href="/produtos-cadastrados.html">Ver produtos cadastrados</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Escopos previstos</h2>
+        <p class="card-subtitle">Organizacao preparada para regras globais, por marketplace, categoria e produto.</p>
+
+        <div class="summary-strip">
+          <div class="summary-item">
+            <span>Global</span>
+            <strong>Politicas gerais</strong>
+          </div>
+          <div class="summary-item">
+            <span>Marketplace</span>
+            <strong>Contexto por canal</strong>
+          </div>
+          <div class="summary-item">
+            <span>Categoria</span>
+            <strong>Familias de produtos</strong>
+          </div>
+          <div class="summary-item">
+            <span>Produto</span>
+            <strong>Excecoes especificas</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novo Produto</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="produto-novo">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1 id="produto-form-titulo">Novo Produto</h1>
+          <p>Cadastre ou edite um produto mantendo custo, venda direta e marketplaces no mesmo fluxo.</p>
+        </div>
+        <a class="button-secondary" href="/produtos-cadastrados.html">Voltar para lista</a>
+      </div>
+
+      <div class="card">
+        <input id="produto-id" type="hidden">
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="nome">Nome do produto</label>
+            <input id="nome" placeholder="Nome do produto" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="sku">SKU</label>
+            <div class="selection-toolbar">
+              <input id="sku" placeholder="SKU interno">
+              <button id="gerar-sku-button" type="button" class="button-secondary">Gerar SKU</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="categoria_canal">Canal da categoria</label>
+            <select id="categoria_canal">
+              <option value="loja_virtual">Loja virtual / venda direta</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="categoria_id">Categoria</label>
+            <select id="categoria_id">
+              <option value="">Sem categoria</option>
+            </select>
+            <small class="field-help" id="categoria-ajuda">
+              A categoria principal pode ser do canal proprio ou de um marketplace selecionado.
+            </small>
+          </div>
+          <div class="field">
+            <label for="barcode">EAN</label>
+            <input id="barcode" placeholder="Codigo de barras / EAN">
+          </div>
+          <div class="field autocomplete-field">
+            <label for="ncm">NCM</label>
+            <input id="ncm" placeholder="Digite o codigo ou descricao do NCM" autocomplete="off">
+            <div id="ncm-sugestoes" class="autocomplete-list hidden"></div>
+          </div>
+          <div class="field">
+            <label for="custo">Custo</label>
+            <input id="custo" type="number" step="0.01" placeholder="Custo">
+          </div>
+          <div class="field">
+            <label for="preco_venda">Preco de venda</label>
+            <input id="preco_venda" type="number" step="0.01" placeholder="Venda direta">
+          </div>
+          <div class="field">
+            <label for="margem_desejada">Margem desejada</label>
+            <input id="margem_desejada" type="number" step="0.0001" placeholder="Ex.: 0.20">
+          </div>
+          <div class="field">
+            <label for="quantidade">Quantidade</label>
+            <input id="quantidade" type="number" placeholder="Quantidade">
+          </div>
+          <div class="field">
+            <label for="estoque_min">Estoque minimo</label>
+            <input id="estoque_min" type="number" placeholder="Estoque minimo">
+          </div>
+          <div class="field">
+            <label for="estoque_max">Estoque maximo</label>
+            <input id="estoque_max" type="number" placeholder="Estoque maximo">
+          </div>
+          <div class="field">
+            <label for="localizacao">Localizacao</label>
+            <input id="localizacao" placeholder="Localizacao estoque">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Marketplaces</label>
+          <div class="selection-toolbar">
+            <select id="marketplace-select">
+              <option value="">Selecione um marketplace</option>
+            </select>
+            <button id="adicionar-marketplace-button" type="button" class="button-secondary">Adicionar marketplace</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Marketplaces selecionados</label>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Marketplace</th>
+                  <th>Margem</th>
+                  <th>Indicadores</th>
+                  <th>Acao</th>
+                </tr>
+              </thead>
+              <tbody id="marketplaces-margens"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="descricao">Descricao</label>
+          <textarea id="descricao" placeholder="Descricao"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button id="produto-submit-button" class="button-primary" type="button">Salvar Produto</button>
+          <a class="button-secondary" href="/produtos-cadastrados.html">Cancelar</a>
+        </div>
+
+        <div id="produtos-feedback" class="feedback"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/marketplaces-source.js"></script>
+<script src="/js/produto-form.js"></script>
+
+</body>
+</html>

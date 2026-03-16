@@ -10,7 +10,7 @@
   <main class="auth-page-shell">
     <section class="auth-panel">
       <h1>Definir nova senha</h1>
-      <p>Informe e confirme a nova senha para concluir a recuperação.</p>
+      <p>Informe e confirme a nova senha para concluir a recuperacao.</p>
 
       <form id="reset-password-form" class="stack-form">
         <label for="nova-senha">Nova senha</label>
@@ -29,29 +29,15 @@
   </main>
 
   <script src="/js/password-toggle.js"></script>
+  <script src="/js/app-api.js"></script>
   <script>
     const token = new URLSearchParams(window.location.search).get('token')
 
     async function enviarRequisicao(url, payload) {
-      const resposta = await fetch(url, {
+      return apiFetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
         body: JSON.stringify(payload)
       })
-
-      const contentType = resposta.headers.get('content-type') || ''
-      const dados = contentType.includes('application/json')
-        ? await resposta.json()
-        : { erro: await resposta.text() }
-
-      if (!resposta.ok) {
-        throw new Error(dados.erro || 'Erro ao processar a solicitação.')
-      }
-
-      return dados
     }
 
     document

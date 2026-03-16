@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "start": "node server/server.js",
-    "migrate": "node server/createTable.js",
+    "migrate:create": "node-pg-migrate create --migrations-dir server/migrations --envPath server/.env",
+    "migrate:up": "node-pg-migrate up --migrations-dir server/migrations --envPath server/.env",
+    "migrate:down": "node-pg-migrate down --migrations-dir server/migrations --envPath server/.env",
+    "migrate:legacy": "node server/createTable.js",
     "seed:marketplaces": "node server/seedMarketplaces.js"
   },
   "dependencies": {
@@ -15,5 +18,8 @@
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^8.0.2",
     "pg": "^8.19.0"
+  },
+  "devDependencies": {
+    "node-pg-migrate": "^8.0.4"
   }
 }

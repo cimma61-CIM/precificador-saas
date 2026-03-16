@@ -115,23 +115,41 @@ router.get('/', async (req, res) => {
 
     const result = await pool.query(
       `
-      SELECT id, nome, slug, ativo, criado_em
-      FROM marketplaces
-      WHERE ($1::boolean = true OR ativo = true)
+      SELECT
+        m.id,
+        m.nome,
+        m.slug,
+        m.ativo,
+        m.criado_em,
+        COALESCE(pm.produtos_marketplaces_count, 0) AS produtos_marketplaces_count,
+        COALESCE(tm.taxas_marketplace_count, 0) AS taxas_marketplace_count,
+        0::int AS precificacao_count,
+        (COALESCE(pm.produtos_marketplaces_count, 0) + COALESCE(tm.taxas_marketplace_count, 0))::int AS total_relacionamentos,
+        (COALESCE(pm.produtos_marketplaces_count, 0) + COALESCE(tm.taxas_marketplace_count, 0) = 0) AS pode_excluir
+      FROM marketplaces m
+      LEFT JOIN (
+        SELECT marketplace_id, COUNT(*)::int AS produtos_marketplaces_count
+        FROM produtos_marketplaces
+        GROUP BY marketplace_id
+      ) pm
+        ON pm.marketplace_id = m.id
+      LEFT JOIN (
+        SELECT marketplace_id, COUNT(*)::int AS taxas_marketplace_count
+        FROM taxas_marketplace
+        GROUP BY marketplace_id
+      ) tm
+        ON tm.marketplace_id = m.id
+      WHERE ($1::boolean = true OR m.ativo = true)
       ${filtroBusca}
-      ORDER BY ativo DESC, nome ASC, id ASC
+      ORDER BY m.ativo DESC, m.nome ASC, m.id ASC
       `,
       params
     )
 
-    const marketplaces = await Promise.all(
-      result.rows.map((row) => montarMarketplaceResposta(row))
-    )
-
-    res.json({ marketplaces })
+    return res.json({ marketplaces: result.rows })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ erro: 'Erro ao buscar marketplaces' })
+    return res.status(500).json({ erro: 'Erro ao buscar marketplaces' })
   }
 })
 

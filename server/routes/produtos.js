@@ -1,16 +1,19 @@
+const path = require('path')
 const express = require('express')
 const router = express.Router()
 const pool = require('../db')
 const {
   normalizarMarketplace,
-  calcularPrecoComTaxas,
   normalizarPercentual,
   normalizarValorMonetario
 } = require('../services/precoService')
 const {
+  recalcularPrecoProduto,
   recalcularProdutoPorId,
   recalcularTodosProdutos
 } = require('../services/precificacaoService')
+
+const clientPath = path.join(__dirname, '..', '..', 'client')
 
 function calcularPrecoDireto(custo, margemDesejada) {
   const divisor = 1 - margemDesejada
@@ -73,26 +76,26 @@ function enriquecerMarketplace(row, custo) {
   }
 
   try {
-    const taxa = {
-      taxa_percentual: row.taxa_percentual,
-      taxa_fixa: row.taxa_fixa,
-      frete_medio: row.frete_medio,
-      indice_extra_percentual: row.indice_extra_percentual,
-      imposto_percentual: row.imposto_percentual
-    }
-
-    const calculo = calcularPrecoComTaxas({
-      custo,
-      margem: marketplace.margem,
-      taxa
-    })
+    const recalculado = recalcularPrecoProduto(
+      {
+        custo,
+        margem: marketplace.margem
+      },
+      {
+        taxa_percentual: row.taxa_percentual,
+        taxa_fixa: row.taxa_fixa,
+        frete_medio: row.frete_medio,
+        indice_extra_percentual: row.indice_extra_percentual,
+        imposto_percentual: row.imposto_percentual
+      }
+    )
 
     return {
       ...marketplace,
       status: 'calculado',
       status_label: 'Calculado',
-      lucro_estimado: calculo.lucro,
-      margem_real: calculo.margem_real
+      lucro_estimado: recalculado.lucro,
+      margem_real: recalculado.margem_real
     }
   } catch (error) {
     return {
@@ -101,6 +104,49 @@ function enriquecerMarketplace(row, custo) {
       status_label: 'Margem invalida'
     }
   }
+}
+
+function normalizarSku(sku) {
+  const valor = String(sku || '').trim().toUpperCase()
+  return valor || null
+}
+
+function gerarSkuAutomatico(produtoId) {
+  return `PROD-${String(produtoId).padStart(6, '0')}`
+}
+
+function requestWantsHtml(req) {
+  const acceptHeader = String(req.headers.accept || '').toLowerCase()
+  return acceptHeader.includes('text/html') && !acceptHeader.includes('application/json')
+}
+
+async function carregarCategoriaPorId(client, categoriaId, usuarioId) {
+  if (!Number.isInteger(categoriaId) || categoriaId <= 0) {
+    return null
+  }
+
+  const result = await client.query(
+    `
+    SELECT
+      c.id,
+      c.nome,
+      c.slug,
+      c.descricao,
+      c.tipo_canal,
+      c.marketplace_id,
+      c.ativa,
+      m.nome AS marketplace_nome
+    FROM categorias c
+    LEFT JOIN marketplaces m
+      ON m.id = c.marketplace_id
+    WHERE c.id = $1
+      AND c.usuario_id = $2
+    LIMIT 1
+    `,
+    [categoriaId, usuarioId]
+  )
+
+  return result.rows[0] || null
 }
 
 async function resolverMarketplacesSelecionados(client, marketplacesInput, marketplaceLegado, margemPadrao) {
@@ -197,25 +243,37 @@ async function carregarProdutoComMarketplaces(client, usuarioId, produtoId) {
   const produtoResult = await client.query(
     `
     SELECT
-      id,
-      usuario_id,
-      nome,
-      barcode,
-      ncm,
-      custo,
-      preco,
-      preco_venda,
-      quantidade,
-      estoque_min,
-      estoque_max,
-      localizacao,
-      descricao,
-      marketplace,
-      margem,
-      margem_desejada
-    FROM produtos
-    WHERE id = $1
-    AND usuario_id = $2
+      p.id,
+      p.usuario_id,
+      p.nome,
+      p.sku,
+      p.barcode,
+      p.ncm,
+      p.categoria_id,
+      c.nome AS categoria_nome,
+      c.slug AS categoria_slug,
+      c.tipo_canal AS categoria_tipo_canal,
+      c.marketplace_id AS categoria_marketplace_id,
+      c.ativa AS categoria_ativa,
+      cm.nome AS categoria_marketplace_nome,
+      p.custo,
+      p.preco,
+      p.preco_venda,
+      p.quantidade,
+      p.estoque_min,
+      p.estoque_max,
+      p.localizacao,
+      p.descricao,
+      p.marketplace,
+      p.margem,
+      p.margem_desejada
+    FROM produtos p
+    LEFT JOIN categorias c
+      ON c.id = p.categoria_id
+    LEFT JOIN marketplaces cm
+      ON cm.id = c.marketplace_id
+    WHERE p.id = $1
+    AND p.usuario_id = $2
     LIMIT 1
     `,
     [produtoId, usuarioId]
@@ -247,6 +305,88 @@ async function carregarProdutoComMarketplaces(client, usuarioId, produtoId) {
       AND tm.usuario_id = pm.usuario_id
     WHERE pm.produto_id = $1
     AND pm.usuario_id = $2
+    ORDER BY m.nome ASC
+    `,
+    [produtoId, usuarioId]
+  )
+
+  const custo = Number(produto.custo || 0)
+
+  return {
+    ...produto,
+    custo,
+    preco: Number(produto.preco || 0),
+    preco_venda: Number(produto.preco_venda || produto.preco || 0),
+    margem: Number(produto.margem || 0),
+    margem_desejada: Number(produto.margem_desejada || produto.margem || 0),
+    marketplaces: marketplacesResult.rows.map((row) => enriquecerMarketplace(row, custo))
+  }
+}
+
+async function carregarProdutoLegadoPorId(client, usuarioId, produtoId) {
+  const produtoResult = await client.query(
+    `
+    SELECT
+      p.id,
+      p.usuario_id,
+      p.nome,
+      p.sku,
+      p.barcode,
+      p.ncm,
+      p.categoria_id,
+      c.nome AS categoria_nome,
+      c.slug AS categoria_slug,
+      c.tipo_canal AS categoria_tipo_canal,
+      c.marketplace_id AS categoria_marketplace_id,
+      c.ativa AS categoria_ativa,
+      cm.nome AS categoria_marketplace_nome,
+      p.custo,
+      p.preco,
+      p.preco_venda,
+      p.quantidade,
+      p.estoque_min,
+      p.estoque_max,
+      p.localizacao,
+      p.descricao,
+      p.marketplace,
+      p.margem,
+      p.margem_desejada
+    FROM produtos p
+    LEFT JOIN categorias c
+      ON c.id = p.categoria_id
+    LEFT JOIN marketplaces cm
+      ON cm.id = c.marketplace_id
+    WHERE p.id = $1
+    LIMIT 1
+    `,
+    [produtoId]
+  )
+
+  if (!produtoResult.rows.length) {
+    return null
+  }
+
+  const produto = produtoResult.rows[0]
+  const marketplacesResult = await client.query(
+    `
+    SELECT
+      pm.marketplace_id,
+      pm.margem,
+      pm.preco_calculado,
+      m.nome,
+      m.slug,
+      tm.taxa_percentual,
+      tm.taxa_fixa,
+      tm.frete_medio,
+      COALESCE(tm.indice_extra_percentual, 0) AS indice_extra_percentual,
+      tm.imposto_percentual
+    FROM produtos_marketplaces pm
+    INNER JOIN marketplaces m
+      ON m.id = pm.marketplace_id
+    LEFT JOIN taxas_marketplace tm
+      ON tm.marketplace_id = pm.marketplace_id
+      AND tm.usuario_id = $2
+    WHERE pm.produto_id = $1
     ORDER BY m.nome ASC
     `,
     [produtoId, usuarioId]
@@ -324,19 +464,21 @@ async function recalcularMarketplacesDoProduto(client, usuarioId, produtoId, cus
 
     if (relacao.taxa_percentual !== null) {
       try {
-        const calculo = calcularPrecoComTaxas({
-          custo,
-          margem: relacao.margem,
-          taxa: {
-          taxa_percentual: relacao.taxa_percentual,
-          taxa_fixa: relacao.taxa_fixa,
-          frete_medio: relacao.frete_medio,
-          indice_extra_percentual: relacao.indice_extra_percentual,
-          imposto_percentual: relacao.imposto_percentual
-        }
-      })
+        const recalculado = recalcularPrecoProduto(
+          {
+            custo,
+            margem: relacao.margem
+          },
+          {
+            taxa_percentual: relacao.taxa_percentual,
+            taxa_fixa: relacao.taxa_fixa,
+            frete_medio: relacao.frete_medio,
+            indice_extra_percentual: relacao.indice_extra_percentual,
+            imposto_percentual: relacao.imposto_percentual
+          }
+        )
 
-        precoCalculado = calculo.preco_sugerido
+        precoCalculado = recalculado.preco_calculado
       } catch (error) {
         precoCalculado = 0
       }
@@ -361,8 +503,10 @@ async function salvarProduto(req, res, modo) {
   try {
     const {
       nome,
+      sku,
       barcode = null,
       ncm = null,
+      categoria_id,
       custo,
       preco,
       preco_venda,
@@ -390,6 +534,15 @@ async function salvarProduto(req, res, modo) {
     }
 
     const nomeNormalizado = String(nome).trim()
+    const skuNormalizado = normalizarSku(sku)
+    const categoriaFoiInformada = categoria_id !== undefined
+    const categoriaDeveLimpar =
+      categoriaFoiInformada && (categoria_id === null || String(categoria_id).trim() === '')
+    const categoriaIdNormalizado = categoriaDeveLimpar
+      ? null
+      : categoriaFoiInformada
+        ? Number(categoria_id)
+        : null
     const custoNormalizado = normalizarValorMonetario(custo, 'Custo')
     const margemInput = margem_desejada ?? margem
     const { precoVenda, margemDesejada } = normalizarPrecoVenda(
@@ -400,6 +553,20 @@ async function salvarProduto(req, res, modo) {
 
     await client.query('BEGIN')
 
+    if (categoriaIdNormalizado !== null && (!Number.isInteger(categoriaIdNormalizado) || categoriaIdNormalizado <= 0)) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ erro: 'Categoria invalida' })
+    }
+
+    if (categoriaIdNormalizado !== null) {
+      const categoria = await carregarCategoriaPorId(client, categoriaIdNormalizado, usuarioId)
+
+      if (!categoria) {
+        await client.query('ROLLBACK')
+        return res.status(400).json({ erro: 'Categoria nao encontrada' })
+      }
+    }
+
     const marketplacesSelecionados = await resolverMarketplacesSelecionados(
       client,
       marketplaces,
@@ -409,6 +576,8 @@ async function salvarProduto(req, res, modo) {
 
     const marketplacePrincipal = marketplacesSelecionados[0]?.slug || null
     let produtoSalvoId = produtoId
+    let skuFinal = skuNormalizado
+    let categoriaIdFinal = categoriaIdNormalizado
 
     if (modo === 'create') {
       const produtoResult = await client.query(
@@ -416,8 +585,10 @@ async function salvarProduto(req, res, modo) {
         INSERT INTO produtos (
           usuario_id,
           nome,
+          sku,
           barcode,
           ncm,
+          categoria_id,
           custo,
           preco,
           preco_venda,
@@ -430,14 +601,16 @@ async function salvarProduto(req, res, modo) {
           margem,
           margem_desejada
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING id
         `,
         [
           usuarioId,
           nomeNormalizado,
+          skuFinal,
           barcode || null,
           ncm || null,
+          categoriaIdFinal,
           custoNormalizado,
           precoVenda,
           precoVenda,
@@ -453,33 +626,71 @@ async function salvarProduto(req, res, modo) {
       )
 
       produtoSalvoId = produtoResult.rows[0].id
+
+      if (!skuFinal) {
+        skuFinal = gerarSkuAutomatico(produtoSalvoId)
+        await client.query(
+          `
+          UPDATE produtos
+          SET sku = $1
+          WHERE id = $2
+          `,
+          [skuFinal, produtoSalvoId]
+        )
+      }
     } else {
+      const produtoAtualResult = await client.query(
+        `
+        SELECT id, sku, categoria_id
+        FROM produtos
+        WHERE id = $1
+        AND usuario_id = $2
+        LIMIT 1
+        `,
+        [produtoId, usuarioId]
+      )
+
+      if (produtoAtualResult.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return res.status(404).json({ erro: 'Produto nao encontrado' })
+      }
+
+      const produtoAtual = produtoAtualResult.rows[0]
+      skuFinal = skuNormalizado ?? produtoAtual.sku
+      categoriaIdFinal = categoriaFoiInformada
+        ? categoriaIdNormalizado
+        : produtoAtual.categoria_id
+
       const updateResult = await client.query(
         `
         UPDATE produtos
         SET
           nome = $1,
-          barcode = $2,
-          ncm = $3,
-          custo = $4,
-          preco = $5,
-          preco_venda = $6,
-          quantidade = $7,
-          estoque_min = $8,
-          estoque_max = $9,
-          localizacao = $10,
-          descricao = $11,
-          marketplace = $12,
-          margem = $13,
-          margem_desejada = $14
-        WHERE id = $15
-        AND usuario_id = $16
+          sku = $2,
+          barcode = $3,
+          ncm = $4,
+          categoria_id = $5,
+          custo = $6,
+          preco = $7,
+          preco_venda = $8,
+          quantidade = $9,
+          estoque_min = $10,
+          estoque_max = $11,
+          localizacao = $12,
+          descricao = $13,
+          marketplace = $14,
+          margem = $15,
+          margem_desejada = $16
+        WHERE id = $17
+        AND usuario_id = $18
         RETURNING id
         `,
         [
           nomeNormalizado,
+          skuFinal,
           barcode || null,
           ncm || null,
+          categoriaIdFinal,
           custoNormalizado,
           precoVenda,
           precoVenda,
@@ -531,6 +742,10 @@ async function salvarProduto(req, res, modo) {
     await client.query('ROLLBACK')
     console.error(err)
 
+    if (err.code === '23505' && err.constraint === 'idx_produtos_sku_unique') {
+      return res.status(409).json({ erro: 'SKU ja cadastrado' })
+    }
+
     if (err.message.includes('numero valido') || err.message.includes('Margem')) {
       return res.status(400).json({ erro: err.message })
     }
@@ -544,6 +759,10 @@ async function salvarProduto(req, res, modo) {
 router.post('/', async (req, res) => salvarProduto(req, res, 'create'))
 
 router.put('/:id', async (req, res) => salvarProduto(req, res, 'update'))
+
+router.get('/novo', async (req, res) => {
+  return res.sendFile(path.join(clientPath, 'produtos-novo.html'))
+})
 
 router.get('/buscar', async (req, res) => {
   const usuarioId = req.user.id
@@ -559,6 +778,7 @@ router.get('/buscar', async (req, res) => {
       SELECT
         id,
         nome,
+        sku,
         barcode,
         ncm,
         custo,
@@ -568,6 +788,7 @@ router.get('/buscar', async (req, res) => {
       WHERE usuario_id = $1
       AND (
         nome ILIKE $2
+        OR COALESCE(sku, '') ILIKE $2
         OR COALESCE(barcode, '') ILIKE $2
         OR COALESCE(ncm, '') ILIKE $2
       )
@@ -591,73 +812,133 @@ router.get('/buscar', async (req, res) => {
   }
 })
 
+router.get('/sugerir-sku', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT sku
+      FROM produtos
+      WHERE sku ~ '^PROD-[0-9]{6}$'
+      ORDER BY CAST(RIGHT(sku, 6) AS INTEGER) DESC
+      LIMIT 1
+      `
+    )
+
+    const ultimoSku = result.rows[0]?.sku || ''
+    const ultimoNumero = ultimoSku ? Number(ultimoSku.slice(-6)) : 0
+
+    return res.json({
+      sku: gerarSkuAutomatico(ultimoNumero + 1)
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ erro: 'Erro ao gerar SKU' })
+  }
+})
+
+router.get('/:id', async (req, res) => {
+  const usuarioId = req.user.id
+  const produtoId = Number(req.params.id)
+
+  if (!Number.isInteger(produtoId) || produtoId <= 0) {
+    return res.status(400).json({ erro: 'ID invalido' })
+  }
+
+  try {
+    const client = await pool.connect()
+
+    try {
+      let produto = await carregarProdutoComMarketplaces(client, usuarioId, produtoId)
+
+      if (!produto) {
+        produto = await carregarProdutoLegadoPorId(client, usuarioId, produtoId)
+      }
+
+      if (!produto) {
+        return res.status(404).json({ erro: 'Produto nao encontrado' })
+      }
+
+      return res.json({
+        ...produto,
+        produto
+      })
+    } finally {
+      client.release()
+    }
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ erro: 'Erro ao carregar produto' })
+  }
+})
+
 router.get('/', async (req, res) => {
+  if (requestWantsHtml(req)) {
+    return res.sendFile(path.join(clientPath, 'produtos.html'))
+  }
+
   const usuarioId = req.user.id
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1)
   const requestedLimit = parseInt(req.query.limit, 10) || 50
   const limit = Math.min(Math.max(requestedLimit, 1), 200)
   const offset = (page - 1) * limit
   const busca = String(req.query.busca || '').trim()
+  const categoriaId = parseInt(req.query.categoria_id, 10)
 
   try {
-    const filtroBusca = busca
-      ? `
-        AND (
-          nome ILIKE $2
-          OR COALESCE(barcode, '') ILIKE $2
-          OR COALESCE(ncm, '') ILIKE $2
+    const filtros = ['p.usuario_id = $1']
+    const params = [usuarioId]
+
+    if (busca) {
+      params.push(`%${busca}%`)
+      filtros.push(`
+        (
+          p.nome ILIKE $${params.length}
+          OR COALESCE(p.sku, '') ILIKE $${params.length}
+          OR COALESCE(p.barcode, '') ILIKE $${params.length}
+          OR COALESCE(p.ncm, '') ILIKE $${params.length}
         )
-      `
-      : ''
-    const totalParams = busca ? [usuarioId, `%${busca}%`] : [usuarioId]
+      `)
+    }
 
-    const totalResult = await pool.query(
-      `
-      SELECT COUNT(*)::int AS total
-      FROM produtos
-      WHERE usuario_id = $1
-      ${filtroBusca}
-      `,
-      totalParams
-    )
+    if (Number.isInteger(categoriaId) && categoriaId > 0) {
+      params.push(categoriaId)
+      filtros.push(`p.categoria_id = $${params.length}`)
+    }
 
-    const produtosParams = busca
-      ? [usuarioId, `%${busca}%`, limit, offset]
-      : [usuarioId, limit, offset]
+    const whereClause = `WHERE ${filtros.join(' AND ')}`
+
+    const produtosParams = [...params, limit, offset]
 
     const produtosResult = await pool.query(
       `
       SELECT
-        id,
-        nome,
-        barcode,
-        ncm,
-        custo,
-        preco,
-        preco_venda,
-        quantidade,
-        estoque_min,
-        estoque_max,
-        localizacao,
-        descricao,
-        marketplace,
-        margem,
-        margem_desejada
-      FROM produtos
-      WHERE usuario_id = $1
-      ${
-        busca
-          ? `
-            AND (
-              nome ILIKE $2
-              OR COALESCE(barcode, '') ILIKE $2
-              OR COALESCE(ncm, '') ILIKE $2
-            )
-          `
-          : ''
-      }
-      ORDER BY id DESC
-      LIMIT $${busca ? 3 : 2} OFFSET $${busca ? 4 : 3}
+        p.id,
+        p.nome,
+        p.sku,
+        p.barcode,
+        p.ncm,
+        p.categoria_id,
+        c.nome AS categoria_nome,
+        c.tipo_canal AS categoria_tipo_canal,
+        c.marketplace_id AS categoria_marketplace_id,
+        p.custo,
+        p.preco,
+        p.preco_venda,
+        p.quantidade,
+        p.estoque_min,
+        p.estoque_max,
+        p.localizacao,
+        p.descricao,
+        p.marketplace,
+        p.margem,
+        p.margem_desejada,
+        COUNT(*) OVER()::int AS total_registros
+      FROM produtos p
+      LEFT JOIN categorias c
+        ON c.id = p.categoria_id
+      ${whereClause}
+      ORDER BY p.id DESC
+      LIMIT $${produtosParams.length - 1} OFFSET $${produtosParams.length}
       `,
       produtosParams
     )
@@ -708,12 +989,13 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const total = totalResult.rows[0]?.total || 0
+    const total = produtos[0]?.total_registros || 0
     const totalPages = Math.max(Math.ceil(total / limit), 1)
 
     return res.json({
       produtos: produtos.map((produto) => ({
         ...produto,
+        total_registros: undefined,
         custo: Number(produto.custo || 0),
         preco: Number(produto.preco || 0),
         preco_venda: Number(produto.preco_venda || produto.preco || 0),

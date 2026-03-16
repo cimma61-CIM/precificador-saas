@@ -116,6 +116,10 @@ async function buscarTaxaPorMarketplace(usuarioId, marketplace) {
   return result.rows[0] || null
 }
 
+// Calculadora central de precificacao.
+// Esta funcao deve permanecer pura: recebe apenas parametros numericos/contextuais
+// ja resolvidos por outras camadas e retorna o resultado matematico sem acessar
+// banco, rotas HTTP ou estado externo.
 function calcularPrecoComTaxas({ custo, margem, taxa, lucro_minimo = 0, lucroMinimo = 0 }) {
   const custoBase = normalizarValorMonetario(custo, 'Custo')
   const margemDesejada = normalizarPercentual(margem)

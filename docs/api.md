@@ -109,8 +109,10 @@ Cria produto.
 Body principal observado:
 
 - `nome`
+- `sku` opcional
 - `barcode`
 - `ncm`
+- `categoria_id` opcional
 - `custo`
 - `preco` ou `preco_venda`
 - `quantidade`
@@ -125,6 +127,7 @@ Body principal observado:
 Observacoes:
 
 - `nome` e `custo` sao obrigatorios;
+- quando `sku` nao e enviado no cadastro, o backend gera automaticamente no formato `PROD-000001`;
 - o backend salva relacoes em `produtos_marketplaces`;
 - a precificacao do produto e recalculada no fluxo de criacao/edicao.
 
@@ -141,6 +144,7 @@ Query params observados:
 - `page`
 - `limit`
 - `busca`
+- `categoria_id`
 
 Resposta inclui:
 
@@ -152,7 +156,46 @@ Resposta inclui:
 
 ### `GET /produtos/buscar`
 
-Busca sugestoes por nome.
+Busca sugestoes por nome, SKU, codigo de barras/EAN ou NCM.
+
+Query params observados:
+
+- `q`
+
+### `GET /produtos/sugerir-sku`
+
+Retorna um SKU sugerido para preenchimento automatico.
+
+## Categorias
+
+Rotas protegidas.
+
+### `GET /categorias`
+
+Lista categorias cadastradas com paginacao.
+
+Query params observados:
+
+- `page`
+- `limit`
+- `busca`
+
+### `POST /categorias`
+
+Cria categoria.
+
+Body principal:
+
+- `nome`
+- `descricao` opcional
+
+## NCM
+
+Rotas protegidas.
+
+### `GET /ncm/sugestoes`
+
+Retorna sugestoes de NCM por codigo ou descricao.
 
 Query params observados:
 

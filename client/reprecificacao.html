@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reprecificacao</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="reprecificacao">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Reprecificacao</h1>
+          <p>Centralize a execucao manual de recalculo sem alterar a arquitetura atual do backend.</p>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="card">
+          <h2>Reprecificacao em massa</h2>
+          <p class="card-subtitle">Usa o endpoint atual de recalculo para todos os produtos do ambiente.</p>
+
+          <div class="form-actions">
+            <button id="reprecificar-todos-button" type="button" class="button-primary">Reprecificar todos os produtos</button>
+          </div>
+
+          <div id="reprecificacao-feedback" class="feedback"></div>
+        </div>
+
+        <div class="card">
+          <h2>Outros fluxos</h2>
+          <p class="card-subtitle">A organizacao por item continua disponivel na tela de produtos cadastrados.</p>
+
+          <div class="form-actions">
+            <a class="button-secondary" href="/produtos-cadastrados.html">Reprecificar por produto</a>
+            <a class="button-secondary" href="/taxas.html">Revisar taxas antes do recalculo</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Status da ultima execucao</h2>
+        <p class="card-subtitle">Resumo simples da ultima reprecificacao iniciada manualmente nesta tela.</p>
+
+        <div class="summary-strip">
+          <div class="summary-item">
+            <span>Processados</span>
+            <strong id="reprecificacao-processados">--</strong>
+          </div>
+          <div class="summary-item">
+            <span>Atualizados</span>
+            <strong id="reprecificacao-atualizados">--</strong>
+          </div>
+          <div class="summary-item">
+            <span>Falhas</span>
+            <strong id="reprecificacao-falhas">--</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/reprecificacao.js"></script>
+
+</body>
+</html>

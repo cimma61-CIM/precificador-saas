@@ -6,6 +6,12 @@ SaaS de precificacao para pequenos vendedores com foco em cadastro de produtos, 
 
 O projeto usa um backend em Node.js + Express conectado ao PostgreSQL e um frontend em HTML, CSS e JavaScript servido pelo proprio backend. Hoje a aplicacao concentra autenticacao, produtos, marketplaces, taxas, analise de lucro e reprecificacao basica.
 
+O cadastro de produtos tambem suporta:
+
+- SKU manual ou automatico
+- categorias de produto
+- sugestao de NCM via autocomplete
+
 ## Stack
 
 - Backend: Node.js + Express
@@ -50,11 +56,21 @@ SMTP_PASS=senha_smtp
 SMTP_FROM=Precificador SaaS <no-reply@seudominio.com>
 ```
 
-### 3. Criar ou atualizar tabelas
+### 3. Aplicar migrations
 
 ```bash
-npm run migrate
+npm run migrate:up
 ```
+
+As migrations versionadas ficam em `server/migrations/` e usam `DATABASE_URL` carregado do `.env`.
+
+Para compatibilidade, o script legado continua disponivel:
+
+```bash
+npm run migrate:legacy
+```
+
+Esse fluxo legado ainda existe enquanto a transicao para migrations versionadas e consolidada.
 
 ### 4. Popular marketplaces padrao
 
@@ -83,8 +99,32 @@ Depois de iniciar o servidor, acesse:
 ## Scripts
 
 - `npm start`: inicia a aplicacao
-- `npm run migrate`: cria/atualiza tabelas e indices
+- `npm run migrate`: abre o runner de migrations versionadas
+- `npm run migrate:create -- nome_da_migration`: cria uma nova migration em `server/migrations/`
+- `npm run migrate:up`: aplica migrations pendentes
+- `npm run migrate:down`: faz rollback da migration mais recente quando ela suporta `down`
+- `npm run migrate:legacy`: executa o bootstrap acumulado antigo em `server/createTable.js`
 - `npm run seed:marketplaces`: cadastra marketplaces padrao
+
+## Migrations
+
+Criar migration:
+
+```bash
+npm run migrate:create -- nome_da_migration
+```
+
+Aplicar migrations:
+
+```bash
+npm run migrate:up
+```
+
+Rollback:
+
+```bash
+npm run migrate:down
+```
 
 ## Documentacao principal
 

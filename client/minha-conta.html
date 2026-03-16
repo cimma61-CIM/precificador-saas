@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha conta</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="minha-conta">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Minha conta</h1>
+          <p>Consulte os dados basicos da conta e acesse o fluxo seguro de alteracao de senha.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Dados da conta</h2>
+        <p class="card-subtitle">Informacoes carregadas a partir da sessao atual do usuario autenticado.</p>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="minha-conta-nome">Nome</label>
+            <input id="minha-conta-nome" readonly>
+          </div>
+          <div class="field">
+            <label for="minha-conta-email">Email</label>
+            <input id="minha-conta-email" readonly>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a class="button-primary" href="/esqueci-senha.html">Alterar senha</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/minha-conta.js"></script>
+
+</body>
+</html>

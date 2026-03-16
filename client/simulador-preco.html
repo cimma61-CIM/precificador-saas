@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de preco</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="simulador-preco">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Simulador de preco</h1>
+          <p>Selecione um produto e teste cenarios sem alterar dados reais do cadastro.</p>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="card table-card">
+          <div class="toolbar">
+            <input id="simulador-busca-produto" class="search-input" placeholder="Buscar produto por SKU, nome ou EAN">
+            <button id="simulador-atualizar-button" type="button" class="button-secondary">Atualizar</button>
+          </div>
+
+          <div id="simulador-feedback" class="feedback"></div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Custo</th>
+                  <th>Preco direto</th>
+                  <th>Marketplaces</th>
+                </tr>
+              </thead>
+              <tbody id="simulador-produtos-tabela">
+                <tr>
+                  <td colspan="4">Carregando produtos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="simulador-paginacao"></div>
+        </div>
+
+        <div class="stack-block">
+          <div class="card">
+            <h2 id="simulador-produto-titulo">Selecione um produto</h2>
+            <p id="simulador-produto-resumo" class="card-subtitle">
+              A simulacao usa o mesmo conjunto de taxas e margens ja configurado para o produto.
+            </p>
+
+            <div id="simulador-vazio" class="empty-state">
+              Escolha um item na lista para consultar precos por marketplace e simular cenarios.
+            </div>
+
+            <div id="simulador-conteudo" class="hidden">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Marketplace</th>
+                      <th>Preco atual</th>
+                      <th>Margem atual</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="simulador-marketplaces-tabela"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div id="simulador-cenario-card" class="card hidden">
+            <h2>Cenario simulado</h2>
+            <p class="card-subtitle">Ajuste custo, margem ou taxas para comparar o resultado antes de qualquer alteracao real.</p>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="sim-custo">Custo</label>
+                <input id="sim-custo" type="number" step="0.01">
+              </div>
+              <div class="field">
+                <label for="sim-marketplace">Marketplace</label>
+                <select id="sim-marketplace"></select>
+              </div>
+              <div class="field">
+                <label for="sim-margem">Margem alvo</label>
+                <input id="sim-margem" type="number" step="0.0001">
+              </div>
+              <div class="field">
+                <label for="sim-taxa-percentual">Taxa percentual</label>
+                <input id="sim-taxa-percentual" type="number" step="0.0001">
+              </div>
+              <div class="field">
+                <label for="sim-taxa-fixa">Taxa fixa</label>
+                <input id="sim-taxa-fixa" type="number" step="0.01">
+              </div>
+              <div class="field">
+                <label for="sim-frete-medio">Frete medio</label>
+                <input id="sim-frete-medio" type="number" step="0.01">
+              </div>
+              <div class="field">
+                <label for="sim-indice-extra">Indices extras</label>
+                <input id="sim-indice-extra" type="number" step="0.0001">
+              </div>
+              <div class="field">
+                <label for="sim-imposto">Imposto percentual</label>
+                <input id="sim-imposto" type="number" step="0.0001">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button id="simulador-calcular-button" type="button" class="button-primary">Calcular simulacao</button>
+            </div>
+
+            <div class="summary-strip">
+              <div class="summary-item">
+                <span>Preco sugerido</span>
+                <strong id="sim-resultado-preco">--</strong>
+              </div>
+              <div class="summary-item">
+                <span>Lucro estimado</span>
+                <strong id="sim-resultado-lucro">--</strong>
+              </div>
+              <div class="summary-item">
+                <span>Margem real</span>
+                <strong id="sim-resultado-margem">--</strong>
+              </div>
+            </div>
+
+            <div id="simulador-resultado-feedback" class="feedback"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/simulador-preco.js"></script>
+
+</body>
+</html>

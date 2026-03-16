@@ -13,10 +13,6 @@ let marketplaceEmEdicao = null
 let buscaMarketplacesTimer = null
 let slugFoiEditadoManualmente = false
 
-function getToken() {
-  return localStorage.getItem('token')
-}
-
 function slugifyMarketplace(valor) {
   return String(valor || '')
     .trim()
@@ -42,45 +38,6 @@ function atualizarEstadoFormularioMarketplace() {
     ? 'Atualizar Marketplace'
     : 'Salvar Marketplace'
   document.getElementById('marketplace-cancel-button').classList.toggle('hidden', !marketplaceEmEdicao)
-}
-
-async function apiFetch(url, options = {}) {
-  const resposta = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-      ...(options.headers || {})
-    }
-  })
-
-  if (resposta.status === 401) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
-    window.top.location.href = '/'
-    throw new Error('Sessao expirada')
-  }
-
-  const contentType = resposta.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
-
-  if (!resposta.ok) {
-    if (isJson) {
-      const erroJson = await resposta.json()
-      throw new Error(erroJson.erro || 'Erro na requisicao')
-    }
-
-    const erroTexto = await resposta.text()
-    throw new Error(erroTexto || 'Erro na requisicao')
-  }
-
-  if (!isJson) {
-    const respostaTexto = await resposta.text()
-    throw new Error(`Resposta invalida da API: ${respostaTexto.slice(0, 120)}`)
-  }
-
-  return resposta.json()
 }
 
 function renderMarketplaces() {

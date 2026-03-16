@@ -6,9 +6,11 @@
 
 ## Origem do schema atual
 
-O schema e mantido hoje pelo script `server/createTable.js`, executado por `npm run migrate`.
+O projeto agora possui migrations versionadas em `server/migrations/`, aplicadas por `npm run migrate:up`.
 
-Esse script:
+Durante a transicao, o script legado `server/createTable.js` continua disponivel via `npm run migrate:legacy`.
+
+Esse script legado:
 
 - cria tabelas quando necessario;
 - adiciona colunas faltantes;

@@ -10,7 +10,7 @@
   <main class="auth-page-shell">
     <section class="auth-panel">
       <h1>Recuperar senha</h1>
-      <p>Informe seu email para gerar um link de redefinição.</p>
+      <p>Informe seu email para gerar um link de redefinicao.</p>
 
       <form id="forgot-password-form" class="stack-form">
         <label for="email">Email</label>
@@ -25,27 +25,13 @@
     </section>
   </main>
 
+  <script src="/js/app-api.js"></script>
   <script>
     async function enviarRequisicao(url, payload) {
-      const resposta = await fetch(url, {
+      return apiFetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
         body: JSON.stringify(payload)
       })
-
-      const contentType = resposta.headers.get('content-type') || ''
-      const dados = contentType.includes('application/json')
-        ? await resposta.json()
-        : { erro: await resposta.text() }
-
-      if (!resposta.ok) {
-        throw new Error(dados.erro || 'Erro ao processar a solicitação.')
-      }
-
-      return dados
     }
 
     document

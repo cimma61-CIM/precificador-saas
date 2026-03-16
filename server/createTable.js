@@ -1,5 +1,6 @@
 require('./config/loadEnv')
 const pool = require('./db')
+const ncmSeed = require('./data/ncmSeed')
 
 async function createTable() {
   try {
@@ -24,6 +25,123 @@ async function createTable() {
     await pool.query(`
       ALTER TABLE usuarios
       ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMP;
+    `)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS categorias (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        descricao TEXT,
+        usuario_id INTEGER,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS slug VARCHAR(160);
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS tipo_canal VARCHAR(50) NOT NULL DEFAULT 'loja_virtual';
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS marketplace_id INTEGER;
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS ativa BOOLEAN NOT NULL DEFAULT true;
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS nome VARCHAR(255);
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS descricao TEXT;
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    `)
+
+    await pool.query(`
+      ALTER TABLE categorias
+      ADD COLUMN IF NOT EXISTS usuario_id INTEGER;
+    `)
+
+    await pool.query(`
+      UPDATE categorias
+      SET slug = REGEXP_REPLACE(
+        REGEXP_REPLACE(
+          LOWER(TRIM(TRANSLATE(
+            nome,
+            'ÁÀÂÃÄáàâãäÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇç',
+            'AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCc'
+          ))),
+          '[^a-z0-9]+',
+          '_',
+          'g'
+        ),
+        '^_+|_+$',
+        '',
+        'g'
+      )
+      WHERE nome IS NOT NULL
+      AND (slug IS NULL OR slug = '');
+    `)
+
+    await pool.query(`
+      UPDATE categorias
+      SET tipo_canal = 'loja_virtual'
+      WHERE tipo_canal IS NULL OR tipo_canal = '';
+    `)
+
+    await pool.query(`
+      DROP INDEX IF EXISTS idx_categorias_nome_unique;
+    `)
+
+    await pool.query(`
+      DROP INDEX IF EXISTS idx_categorias_slug_escopo_unique;
+    `)
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_categorias_slug_escopo_unique
+      ON categorias (usuario_id, LOWER(slug), tipo_canal, COALESCE(marketplace_id, 0));
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_categorias_tipo_marketplace
+      ON categorias (tipo_canal, marketplace_id, ativa);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_categorias_usuario
+      ON categorias (usuario_id);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_categorias_usuario_tipo_marketplace
+      ON categorias (usuario_id, tipo_canal, marketplace_id, ativa, id DESC);
+    `)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ncm (
+        codigo VARCHAR(20) PRIMARY KEY,
+        descricao TEXT NOT NULL
+      );
+    `)
+
+    await pool.query(`
+      ALTER TABLE ncm
+      ADD COLUMN IF NOT EXISTS descricao TEXT;
     `)
 
     await pool.query(`
@@ -197,6 +315,36 @@ async function createTable() {
     `)
 
     await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'categorias_marketplace_id_fkey'
+        ) THEN
+          ALTER TABLE categorias
+          ADD CONSTRAINT categorias_marketplace_id_fkey
+          FOREIGN KEY (marketplace_id) REFERENCES marketplaces(id) ON DELETE SET NULL;
+        END IF;
+      END $$;
+    `)
+
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'categorias_usuario_id_fkey'
+        ) THEN
+          ALTER TABLE categorias
+          ADD CONSTRAINT categorias_usuario_id_fkey
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `)
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS produtos (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
@@ -211,12 +359,22 @@ async function createTable() {
 
     await pool.query(`
       ALTER TABLE produtos
+      ADD COLUMN IF NOT EXISTS sku VARCHAR(50);
+    `)
+
+    await pool.query(`
+      ALTER TABLE produtos
       ADD COLUMN IF NOT EXISTS barcode VARCHAR(100);
     `)
 
     await pool.query(`
       ALTER TABLE produtos
       ADD COLUMN IF NOT EXISTS ncm VARCHAR(20);
+    `)
+
+    await pool.query(`
+      ALTER TABLE produtos
+      ADD COLUMN IF NOT EXISTS categoria_id INTEGER;
     `)
 
     await pool.query(`
@@ -332,6 +490,21 @@ async function createTable() {
         IF NOT EXISTS (
           SELECT 1
           FROM pg_constraint
+          WHERE conname = 'produtos_categoria_id_fkey'
+        ) THEN
+          ALTER TABLE produtos
+          ADD CONSTRAINT produtos_categoria_id_fkey
+          FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL;
+        END IF;
+      END $$;
+    `)
+
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
           WHERE conname = 'produtos_usuario_id_fkey'
         ) THEN
           ALTER TABLE produtos
@@ -342,8 +515,19 @@ async function createTable() {
     `)
 
     await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_produtos_sku_unique
+      ON produtos (sku)
+      WHERE sku IS NOT NULL;
+    `)
+
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_produtos_usuario_id
       ON produtos (usuario_id, id DESC);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_produtos_usuario_sku
+      ON produtos (usuario_id, sku);
     `)
 
     await pool.query(`
@@ -352,8 +536,33 @@ async function createTable() {
     `)
 
     await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_produtos_usuario_barcode
+      ON produtos (usuario_id, barcode);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_produtos_categoria_id
+      ON produtos (categoria_id);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_produtos_usuario_categoria
+      ON produtos (usuario_id, categoria_id);
+    `)
+
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_produtos_usuario_marketplace
       ON produtos (usuario_id, marketplace);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ncm_codigo
+      ON ncm (codigo);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ncm_descricao_lower
+      ON ncm (LOWER(descricao));
     `)
 
     await pool.query(`
@@ -609,6 +818,18 @@ async function createTable() {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_taxas_marketplace_usuario_marketplace_id_unique
       ON taxas_marketplace (usuario_id, marketplace_id);
     `)
+
+    for (const item of ncmSeed) {
+      await pool.query(
+        `
+        INSERT INTO ncm (codigo, descricao)
+        VALUES ($1, $2)
+        ON CONFLICT (codigo) DO UPDATE
+        SET descricao = EXCLUDED.descricao
+        `,
+        [item.codigo, item.descricao]
+      )
+    }
 
     console.log('Tabelas e indices criados com sucesso!')
   } catch (err) {

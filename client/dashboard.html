@@ -1,64 +1,126 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Precificador SaaS</title>
-<link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Precificador SaaS</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
 </head>
-<body>
+<body data-app-page="dashboard">
+  <main class="main-content">
+    <div class="dashboard-main">
+      <header class="dashboard-topbar">
+        <div>
+          <span class="topbar-kicker">Visao operacional</span>
+          <h1>Dashboard profissional de precificacao</h1>
+          <p id="dashboard-subtitle">Carregando indicadores do seu ambiente...</p>
+        </div>
+        <div class="topbar-actions">
+          <a class="topbar-link" href="/produtos-cadastrados.html">Gerenciar produtos</a>
+        </div>
+      </header>
 
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="brand">
-      <h2>Precificador</h2>
-      <span>Painel de gestão para marketplaces</span>
-    </div>
+      <section class="dashboard-cards">
+        <article class="stat-card">
+          <span>Produtos cadastrados</span>
+          <strong id="metric-products">--</strong>
+          <small>Base total disponivel na operacao</small>
+        </article>
+        <article class="stat-card">
+          <span>Marketplaces ativos</span>
+          <strong id="metric-marketplaces">--</strong>
+          <small>Canais carregados na conta</small>
+        </article>
+        <article class="stat-card">
+          <span>Margem media</span>
+          <strong id="metric-margin">--</strong>
+          <small>Margem consolidada da carteira</small>
+        </article>
+        <article class="stat-card accent">
+          <span>Lucro estimado</span>
+          <strong id="metric-profit">--</strong>
+          <small>Lucro estimado total</small>
+        </article>
+      </section>
 
-    <nav class="menu">
-      <a href="#" class="active" onclick="carregarPagina('resumo.html', this)">Dashboard</a>
-      <a href="#" onclick="carregarPagina('produtos.html', this)">Produtos</a>
-      <a href="#" onclick="carregarPagina('marketplaces.html', this)">Marketplaces</a>
-      <a href="#" onclick="carregarPagina('taxas.html', this)">Taxas Marketplace</a>
-      <a href="#" onclick="logout()">Sair</a>
-    </nav>
-  </aside>
+      <section class="dashboard-panel spotlight-panel">
+        <div>
+          <span class="panel-badge">Resumo executivo</span>
+          <h2>Decisoes mais rapidas com leitura direta de margem e canal</h2>
+          <p>
+            O painel consolida produtos, marketplaces e indicadores de margem para
+            facilitar o acompanhamento da operacao comercial.
+          </p>
+        </div>
+        <div class="spotlight-meta">
+          <div>
+            <span>Ultimo preco monitorado</span>
+            <strong id="last-price-value">--</strong>
+          </div>
+          <div>
+            <span>Ultimo item</span>
+            <strong id="last-price-label">--</strong>
+          </div>
+        </div>
+      </section>
 
-  <main class="content">
-    <div class="content-header">
-      <div>
-        <h1>Painel</h1>
-        <p>Acompanhe indicadores, configure marketplaces e atualize seus preços.</p>
-      </div>
-    </div>
+      <section class="dashboard-grid">
+        <article class="dashboard-panel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-badge">Tabela de produtos</span>
+              <h2>Produtos recentes</h2>
+            </div>
+            <button id="refresh-button" type="button" class="panel-button">Atualizar dados</button>
+          </div>
 
-    <div class="frame-shell">
-      <iframe id="conteudo" src="resumo.html?v=20260311-3"></iframe>
+          <div class="table-wrap">
+            <table class="products-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Custo</th>
+                  <th>Preco atual</th>
+                  <th>Margem</th>
+                  <th>Marketplace</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <tr>
+                  <td colspan="5" class="table-empty">Carregando produtos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="dashboard-panel side-panel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-badge">Saude da operacao</span>
+              <h2>Leituras rapidas</h2>
+            </div>
+          </div>
+
+          <div class="side-metric-list">
+            <div class="side-metric danger">
+              <span>Produtos com margem negativa</span>
+              <strong id="metric-negative">--</strong>
+            </div>
+            <div class="side-metric">
+              <span>Produtos listados</span>
+              <strong id="metric-listed">--</strong>
+            </div>
+            <div class="dashboard-feedback" id="dashboard-feedback"></div>
+          </div>
+        </article>
+      </section>
     </div>
   </main>
-</div>
 
-<script>
-if (!localStorage.getItem("token")) {
-  window.location.href = "/"
-}
-
-function carregarPagina(pagina, link){
-  document.getElementById("conteudo").src = `${pagina}?v=20260311-3`
-  document
-    .querySelectorAll(".menu a")
-    .forEach((item) => item.classList.remove("active"))
-
-  if (link) {
-    link.classList.add("active")
-  }
-}
-
-function logout() {
-  localStorage.removeItem("token")
-  localStorage.removeItem("usuario")
-  window.location.href = "/"
-}
-</script>
-
+  <script src="/js/app-api.js"></script>
+  <script src="/js/app-layout.js"></script>
+  <script src="/js/dashboard.js"></script>
 </body>
 </html>

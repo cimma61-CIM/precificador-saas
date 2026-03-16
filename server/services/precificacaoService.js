@@ -1,6 +1,9 @@
 const pool = require('../db')
 const { calcularPrecoComTaxas } = require('./precoService')
 
+// Adaptador entre a calculadora pura e o fluxo de reprecificacao.
+// Esta funcao prepara a entrada com dados do produto-marketplace e traduz a saida
+// da calculadora para o formato persistido pelo sistema.
 function recalcularPrecoProduto(produtoMarketplace, taxa) {
   const resultado = calcularPrecoComTaxas({
     custo: produtoMarketplace.custo,

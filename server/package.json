@@ -1,0 +1,11 @@
+{
+  "name": "precificador-saas-server",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "migrate:create": "node-pg-migrate create --migrations-dir migrations --envPath .env",
+    "migrate:up": "node-pg-migrate up --migrations-dir migrations --envPath .env",
+    "migrate:down": "node-pg-migrate down --migrations-dir migrations --envPath .env",
+    "migrate:legacy": "node createTable.js"
+  }
+}

@@ -1,6 +1,8 @@
 let paginaAtual = 1
 let buscaAtual = ''
+let filtroCategoriaAtual = ''
 let marketplacesCache = []
+let categoriasCache = []
 let produtoEmEdicao = null
 let produtosCache = []
 let produtosDestacados = new Set()
@@ -12,10 +14,12 @@ let inlineSaving = new Set()
 let ordenacaoMarketplaces = 'nome'
 let autocompleteTimer = null
 let buscaProdutosTimer = null
+let ncmAutocompleteTimer = null
 let selectedMarketplacesState = []
 let produtoSelecionadoId = null
 let simulacaoAberta = false
 let concorrenteInputs = new Map()
+const PAGINACAO_JANELA = 2
 
 function getToken() {
   return localStorage.getItem('token')
@@ -29,6 +33,12 @@ function setFeedback(mensagem, tipo = '') {
 
 function esconderSugestoesProduto() {
   const container = document.getElementById('produto-sugestoes')
+  container.classList.add('hidden')
+  container.innerHTML = ''
+}
+
+function esconderSugestoesNcm() {
+  const container = document.getElementById('ncm-sugestoes')
   container.classList.add('hidden')
   container.innerHTML = ''
 }
@@ -76,6 +86,47 @@ async function buscarSugestoesProduto(query) {
     renderSugestoesProduto(dados.produtos || [])
   } catch (error) {
     esconderSugestoesProduto()
+  }
+}
+
+function renderSugestoesNcm(itens) {
+  const container = document.getElementById('ncm-sugestoes')
+
+  if (!itens.length) {
+    esconderSugestoesNcm()
+    return
+  }
+
+  container.innerHTML = itens
+    .map(
+      (item) => `
+        <button
+          type="button"
+          class="autocomplete-item"
+          data-ncm-codigo="${item.codigo}"
+          data-ncm-descricao="${item.descricao}"
+        >
+          <strong>${item.codigo}</strong>
+          <span>${item.descricao}</span>
+        </button>
+      `
+    )
+    .join('')
+
+  container.classList.remove('hidden')
+}
+
+async function buscarSugestoesNcm(query) {
+  if (query.trim().length < 2) {
+    esconderSugestoesNcm()
+    return
+  }
+
+  try {
+    const dados = await apiFetch(`/ncm/sugestoes?q=${encodeURIComponent(query)}`)
+    renderSugestoesNcm(dados.ncm || [])
+  } catch (error) {
+    esconderSugestoesNcm()
   }
 }
 
@@ -269,45 +320,49 @@ function atualizarLogicaPrecoMargem() {
   precoVendaInput.readOnly = false
 }
 
-async function apiFetch(url, options = {}) {
-  const token = getToken()
+function renderCategoriaOptions(selectId, includeAllOption = false) {
+  const select = document.getElementById(selectId)
 
-  const resposta = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {})
-    }
+  if (!select) {
+    return
+  }
+
+  const valorAtual = select.value
+
+  const primeiraOpcao = includeAllOption
+    ? '<option value="">Todas as categorias</option>'
+    : '<option value="">Sem categoria</option>'
+
+  select.innerHTML = primeiraOpcao
+
+  categoriasCache.forEach((categoria) => {
+    select.innerHTML += `<option value="${categoria.id}">${categoria.nome}</option>`
   })
 
-  if (resposta.status === 401) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
-    window.top.location.href = '/'
-    throw new Error('Sessao expirada')
+  select.value = valorAtual
+}
+
+async function loadCategorias() {
+  const dados = await apiFetch('/categorias?limit=200&page=1')
+  categoriasCache = dados.categorias || []
+  renderCategoriaOptions('categoria_id')
+  renderCategoriaOptions('filtro-categoria', true)
+}
+
+async function gerarSkuAutomatico() {
+  const botao = document.getElementById('gerar-sku-button')
+
+  setButtonLoading(botao, true, 'Gerar SKU', 'Gerando...')
+
+  try {
+    const dados = await apiFetch('/produtos/sugerir-sku')
+    document.getElementById('sku').value = dados.sku || ''
+    setFeedback('SKU preenchido automaticamente.', 'text-success')
+  } catch (error) {
+    setFeedback(error.message, 'text-danger')
+  } finally {
+    setButtonLoading(botao, false, 'Gerar SKU', 'Gerando...')
   }
-
-  const contentType = resposta.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
-
-  if (!resposta.ok) {
-    if (isJson) {
-      const dadosErro = await resposta.json()
-      throw new Error(dadosErro.erro || 'Erro na requisicao')
-    }
-
-    const textoErro = await resposta.text()
-    throw new Error(textoErro || 'Erro na requisicao')
-  }
-
-  if (!isJson) {
-    const texto = await resposta.text()
-    throw new Error(`Resposta invalida da API: ${texto.slice(0, 120)}`)
-  }
-
-  return resposta.json()
 }
 
 function getMarketplaceById(marketplaceId) {
@@ -697,8 +752,10 @@ async function salvarProduto() {
   const produtoAnterior = produtosCache.find((item) => item.id === Number(produtoId))
   const produto = {
     nome: document.getElementById('nome').value.trim(),
+    sku: document.getElementById('sku').value.trim(),
     barcode: document.getElementById('barcode').value.trim(),
     ncm: document.getElementById('ncm').value.trim(),
+    categoria_id: document.getElementById('categoria_id').value,
     custo: document.getElementById('custo').value,
     preco_venda: document.getElementById('preco_venda').value,
     margem_desejada: document.getElementById('margem_desejada').value,
@@ -889,8 +946,10 @@ function renderPrecosCalculados(produto) {
 function montarPayloadProduto(produto, marketplaces) {
   return {
     nome: produto.nome,
+    sku: produto.sku || '',
     barcode: produto.barcode || '',
     ncm: produto.ncm || '',
+    categoria_id: produto.categoria_id ?? '',
     custo: produto.custo,
     preco_venda: produto.preco_venda,
     margem_desejada: produto.margem_desejada,
@@ -962,8 +1021,10 @@ function preencherFormulario(produto) {
   produtoEmEdicao = produto.id
   document.getElementById('produto-id').value = produto.id
   document.getElementById('nome').value = produto.nome || ''
+  document.getElementById('sku').value = produto.sku || ''
   document.getElementById('barcode').value = produto.barcode || ''
   document.getElementById('ncm').value = produto.ncm || ''
+  document.getElementById('categoria_id').value = produto.categoria_id || ''
   document.getElementById('custo').value = produto.custo || ''
   document.getElementById('preco_venda').value = produto.preco_venda || ''
   document.getElementById('margem_desejada').value = produto.margem_desejada || ''
@@ -998,7 +1059,7 @@ function editarProduto(id) {
 async function carregarProdutos(page = 1, busca = '') {
   try {
     const dados = await apiFetch(
-      `/produtos?page=${page}&busca=${encodeURIComponent(busca)}`
+      `/produtos?page=${page}&busca=${encodeURIComponent(busca)}&categoria_id=${encodeURIComponent(filtroCategoriaAtual)}`
     )
 
     produtosCache = dados.produtos
@@ -1008,7 +1069,7 @@ async function carregarProdutos(page = 1, busca = '') {
     if (!dados.produtos.length) {
       tabela.innerHTML = `
         <tr>
-          <td colspan="10">Nenhum produto cadastrado.</td>
+          <td colspan="12">Nenhum produto cadastrado.</td>
         </tr>
       `
       if (buscaAtual || produtoSelecionadoId) {
@@ -1025,7 +1086,9 @@ async function carregarProdutos(page = 1, busca = '') {
           data-product-row-id="${produto.id}"
         >
           <td>${produto.id}</td>
+          <td>${produto.sku || '<span class="text-soft">Auto</span>'}</td>
           <td>${produto.nome}</td>
+          <td>${produto.categoria_nome || '<span class="text-soft">Sem categoria</span>'}</td>
           <td>${renderMarketplaces(produto)}</td>
           <td>${formatarPercentual(produto.margem_desejada || 0)}</td>
           <td>${produto.quantidade || 0}</td>
@@ -1072,11 +1135,42 @@ function criarPaginacao(totalPages) {
   const paginacao = document.getElementById('paginacao')
   paginacao.innerHTML = ''
 
-  for (let i = 1; i <= totalPages; i += 1) {
-    paginacao.innerHTML += `
-      <button onclick="irParaPagina(${i})">${i}</button>
-    `
+  if (!totalPages || totalPages <= 1) {
+    return
   }
+
+  const inicio = Math.max(1, paginaAtual - PAGINACAO_JANELA)
+  const fim = Math.min(totalPages, paginaAtual + PAGINACAO_JANELA)
+  const paginas = []
+
+  for (let i = inicio; i <= fim; i += 1) {
+    paginas.push(i)
+  }
+
+  const anteriorDesabilitado = paginaAtual <= 1 ? 'disabled' : ''
+  const proximaDesabilitada = paginaAtual >= totalPages ? 'disabled' : ''
+
+  paginacao.innerHTML = `
+    <button type="button" onclick="irParaPagina(${paginaAtual - 1})" ${anteriorDesabilitado}>
+      << Anterior
+    </button>
+    ${paginas
+      .map(
+        (pagina) => `
+          <button
+            type="button"
+            onclick="irParaPagina(${pagina})"
+            ${pagina === paginaAtual ? 'disabled aria-current="page"' : ''}
+          >
+            ${pagina}
+          </button>
+        `
+      )
+      .join('')}
+    <button type="button" onclick="irParaPagina(${paginaAtual + 1})" ${proximaDesabilitada}>
+      Proxima >>
+    </button>
+  `
 }
 
 function irParaPagina(pagina) {
@@ -1088,8 +1182,10 @@ function limparFormulario() {
   produtoEmEdicao = null
   document.getElementById('produto-id').value = ''
   document.getElementById('nome').value = ''
+  document.getElementById('sku').value = ''
   document.getElementById('barcode').value = ''
   document.getElementById('ncm').value = ''
+  document.getElementById('categoria_id').value = ''
   document.getElementById('custo').value = ''
   document.getElementById('preco_venda').value = ''
   document.getElementById('margem_desejada').value = ''
@@ -1166,6 +1262,18 @@ function handleNomeProdutoInput() {
   }, 250)
 }
 
+function handleNcmInput() {
+  const ncmInput = document.getElementById('ncm')
+
+  if (ncmAutocompleteTimer) {
+    clearTimeout(ncmAutocompleteTimer)
+  }
+
+  ncmAutocompleteTimer = window.setTimeout(() => {
+    buscarSugestoesNcm(ncmInput.value)
+  }, 200)
+}
+
 function handleCliqueSugestao(event) {
   const botao = event.target.closest('[data-sugestao-id]')
 
@@ -1182,6 +1290,17 @@ function handleCliqueSugestao(event) {
   atualizarLogicaPrecoMargem()
   esconderSugestoesProduto()
   setFeedback('Sugestao preenchida com nome, barcode, NCM e custo. Voce ainda pode ajustar os dados.', 'text-success')
+}
+
+function handleCliqueSugestaoNcm(event) {
+  const botao = event.target.closest('[data-ncm-codigo]')
+
+  if (!botao) {
+    return
+  }
+
+  document.getElementById('ncm').value = botao.dataset.ncmCodigo || ''
+  esconderSugestoesNcm()
 }
 
 function handleSelecaoProdutoTabela(event) {
@@ -1290,6 +1409,14 @@ document
   })
 
 document
+  .getElementById('filtro-categoria')
+  .addEventListener('change', function () {
+    filtroCategoriaAtual = this.value
+    paginaAtual = 1
+    carregarProdutos(paginaAtual, buscaAtual)
+  })
+
+document
   .getElementById('ordenacao-marketplaces')
   .addEventListener('change', function () {
     ordenacaoMarketplaces = this.value
@@ -1303,15 +1430,26 @@ document.getElementById('margem_desejada').addEventListener('input', function ()
   renderCamposMargemMarketplaces()
 })
 document.getElementById('nome').addEventListener('input', handleNomeProdutoInput)
+document.getElementById('ncm').addEventListener('input', handleNcmInput)
 document.getElementById('produto-sugestoes').addEventListener('click', handleCliqueSugestao)
+document.getElementById('ncm-sugestoes').addEventListener('click', handleCliqueSugestaoNcm)
 document.getElementById('abrir-simulacao').addEventListener('click', abrirSimulacao)
 document.getElementById('fechar-simulacao').addEventListener('click', fecharSimulacao)
+document.getElementById('gerar-sku-button').addEventListener('click', gerarSkuAutomatico)
 document.getElementById('nome').addEventListener('blur', function () {
   window.setTimeout(esconderSugestoesProduto, 150)
 })
 document.getElementById('nome').addEventListener('focus', function () {
   if (this.value.trim().length >= 2) {
     buscarSugestoesProduto(this.value)
+  }
+})
+document.getElementById('ncm').addEventListener('blur', function () {
+  window.setTimeout(esconderSugestoesNcm, 150)
+})
+document.getElementById('ncm').addEventListener('focus', function () {
+  if (this.value.trim().length >= 2) {
+    buscarSugestoesNcm(this.value)
   }
 })
 
@@ -1321,6 +1459,6 @@ document.getElementById('tabela-produtos').addEventListener('click', handleSelec
 document.getElementById('consulta-marketplaces').addEventListener('input', handleConcorrenteInput)
 document.getElementById('simulacao-marketplaces').addEventListener('input', handleSimulacaoInput)
 
-Promise.all([loadMarketplaces(), carregarProdutos()]).catch((error) => {
+Promise.all([loadMarketplaces(), loadCategorias(), carregarProdutos()]).catch((error) => {
   setFeedback(error.message, 'text-danger')
 })

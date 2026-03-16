@@ -9,31 +9,6 @@ function formatarPercentual(valor) {
   return `${(Number(valor || 0) * 100).toFixed(2)}%`
 }
 
-async function apiFetch(url) {
-  const token = localStorage.getItem('token')
-
-  const resposta = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-
-  if (resposta.status === 401) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
-    window.top.location.href = '/'
-    throw new Error('Sessao expirada')
-  }
-
-  const dados = await resposta.json()
-
-  if (!resposta.ok) {
-    throw new Error(dados.erro || 'Erro ao carregar dashboard')
-  }
-
-  return dados
-}
-
 async function carregarDashboard() {
   const dados = await apiFetch('/analise/dashboard')
 
