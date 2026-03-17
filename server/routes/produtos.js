@@ -12,6 +12,7 @@ const {
   recalcularProdutoPorId,
   recalcularTodosProdutos
 } = require('../services/precificacaoService')
+const { registrarHistoricoProduto } = require('../services/historicoProdutosService')
 
 const clientPath = path.join(__dirname, '..', '..', 'client')
 
@@ -739,6 +740,8 @@ async function salvarProduto(req, res, modo) {
       produtoSalvoId,
       custoNormalizado
     )
+
+    await registrarHistoricoProduto(client, produtoSalvoId, usuarioId)
 
     const produtoCompleto = await carregarProdutoComMarketplaces(
       client,

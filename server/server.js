@@ -14,6 +14,8 @@ const authRoutes = require('./routes/authRoutes')
 const categoriasRoutes = require('./routes/categorias')
 const importacaoRoutes = require('./routes/importacaoRoutes')
 const ncmRoutes = require('./routes/ncm')
+const comprasRoutes = require('./routes/comprasRoutes')
+const produtoFornecedorRoutes = require('./routes/produtoFornecedorRoutes')
 const authMiddleware = require('./middleware/auth')
 const errorHandler = require('./middleware/errorHandler')
 const logger = require('./utils/logger')
@@ -24,6 +26,9 @@ const clientPath = path.join(__dirname, '..', 'client')
 const ensureCategoriasSqlPath = path.join(__dirname, 'sql', 'ensure_categorias.sql')
 const ensureProdutosCategoriaIdSqlPath = path.join(__dirname, 'sql', 'ensure_produtos_categoria_id.sql')
 const ensureProdutosEanSqlPath = path.join(__dirname, 'sql', 'ensure_produtos_ean.sql')
+const ensureHistoricoProdutosSqlPath = path.join(__dirname, 'sql', 'ensure_historico_produtos.sql')
+const ensureComprasSqlPath = path.join(__dirname, 'sql', 'ensure_compras.sql')
+const ensureProdutoFornecedorSqlPath = path.join(__dirname, 'sql', 'ensure_produto_fornecedor.sql')
 
 async function ensureSqlFile(filePath, successMessage, errorMessage) {
   try {
@@ -65,6 +70,8 @@ app.use('/auth', authRoutes)
 app.use('/marketplaces', authMiddleware, marketplacesRoutes)
 app.use('/categorias', authMiddleware, categoriasRoutes)
 app.use('/ncm', authMiddleware, ncmRoutes)
+app.use('/compras', authMiddleware, comprasRoutes)
+app.use('/produto-fornecedor', authMiddleware, produtoFornecedorRoutes)
 app.use('/produtos', authMiddleware, importacaoRoutes)
 app.use('/produtos', authMiddleware, produtosRoutes)
 app.use('/taxas', authMiddleware, taxasRoutes)
@@ -89,6 +96,24 @@ async function startServer() {
     ensureProdutosEanSqlPath,
     'Coluna produtos.ean verificada com sucesso.',
     'Falha ao garantir a coluna produtos.ean:'
+  )
+
+  await ensureSqlFile(
+    ensureHistoricoProdutosSqlPath,
+    'Tabela historico_produtos verificada com sucesso.',
+    'Falha ao garantir a tabela historico_produtos:'
+  )
+
+  await ensureSqlFile(
+    ensureComprasSqlPath,
+    'Tabelas de compras verificadas com sucesso.',
+    'Falha ao garantir as tabelas de compras:'
+  )
+
+  await ensureSqlFile(
+    ensureProdutoFornecedorSqlPath,
+    'Tabela produto_fornecedor verificada com sucesso.',
+    'Falha ao garantir a tabela produto_fornecedor:'
   )
 
   const server = app.listen(PORT, () => {

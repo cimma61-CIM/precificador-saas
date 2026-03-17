@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferencia XML</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-page="xml-conferencia">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Conferencia de XML</h1>
+          <p>Revise os itens da nota, vincule produtos pendentes e confirme a importacao da compra.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Upload do XML</h2>
+        <p class="card-subtitle">Selecione um XML de nota fiscal para analisar os itens antes da confirmacao.</p>
+
+        <div class="field">
+          <label for="xml-arquivo">Arquivo XML</label>
+          <input type="file" id="xml-arquivo" accept=".xml,text/xml,application/xml">
+          <small class="field-help">O sistema usa fornecedor + codigo do fornecedor para identificar produtos.</small>
+        </div>
+
+        <div class="form-actions">
+          <button id="xml-analisar-button" type="button" class="button-primary">Analisar XML</button>
+          <button id="xml-confirmar-button" type="button" class="button-secondary" disabled>Confirmar importacao</button>
+        </div>
+
+        <div id="xml-feedback" class="feedback"></div>
+      </div>
+
+      <div id="xml-resumo-card" class="card hidden">
+        <h2>Resumo da conferencia</h2>
+        <div class="summary-strip">
+          <div class="summary-item">
+            <span>Fornecedor</span>
+            <strong id="xml-fornecedor">-</strong>
+          </div>
+          <div class="summary-item">
+            <span>Data</span>
+            <strong id="xml-data">-</strong>
+          </div>
+          <div class="summary-item">
+            <span>Itens identificados</span>
+            <strong id="xml-identificados-total">0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Itens nao identificados</span>
+            <strong id="xml-nao-identificados-total">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div id="xml-identificados-card" class="card hidden">
+        <h2>Itens identificados</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Codigo fornecedor</th>
+                <th>Produto vinculado</th>
+              </tr>
+            </thead>
+            <tbody id="xml-identificados-tabela">
+              <tr>
+                <td colspan="3">Nenhum item identificado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="xml-nao-identificados-card" class="card hidden">
+        <div class="toolbar">
+          <div>
+            <h2>Itens nao identificados</h2>
+            <p class="card-subtitle">Selecione o produto correto para salvar o vinculo e seguir com a importacao.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Codigo fornecedor</th>
+                <th>Quantidade</th>
+                <th>Custo unitario</th>
+                <th>Produto</th>
+                <th>Acao</th>
+              </tr>
+            </thead>
+            <tbody id="xml-nao-identificados-tabela">
+              <tr>
+                <td colspan="6">Nenhum item pendente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/theme.js"></script>
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/xml-conferencia.js"></script>
+
+</body>
+</html>

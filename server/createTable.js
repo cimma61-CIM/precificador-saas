@@ -574,6 +574,86 @@ async function createTable() {
     `)
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS historico_produtos (
+        id SERIAL PRIMARY KEY,
+        produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE CASCADE,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        sku VARCHAR(50),
+        nome VARCHAR(255) NOT NULL,
+        ean VARCHAR(20),
+        custo NUMERIC(10,2) NOT NULL DEFAULT 0,
+        preco_venda NUMERIC(10,2) NOT NULL DEFAULT 0,
+        margem NUMERIC(10,4) NOT NULL DEFAULT 0,
+        criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_historico_produtos_produto
+      ON historico_produtos (produto_id, criado_em DESC);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_historico_produtos_usuario
+      ON historico_produtos (usuario_id, criado_em DESC);
+    `)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS compras (
+        id SERIAL PRIMARY KEY,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        data DATE NOT NULL,
+        fornecedor VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_compras_usuario_data
+      ON compras (usuario_id, data DESC, id DESC);
+    `)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS compras_itens (
+        id SERIAL PRIMARY KEY,
+        compra_id INTEGER NOT NULL REFERENCES compras(id) ON DELETE CASCADE,
+        produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT,
+        quantidade INTEGER NOT NULL,
+        custo_unitario NUMERIC(10,2) NOT NULL
+      );
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_compras_itens_compra
+      ON compras_itens (compra_id, id DESC);
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_compras_itens_produto
+      ON compras_itens (produto_id);
+    `)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS produto_fornecedor (
+        id SERIAL PRIMARY KEY,
+        produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE CASCADE,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        fornecedor VARCHAR(255) NOT NULL,
+        codigo_fornecedor VARCHAR(120) NOT NULL
+      );
+    `)
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_produto_fornecedor_usuario_fornecedor_codigo_unique
+      ON produto_fornecedor (usuario_id, LOWER(TRIM(fornecedor)), LOWER(TRIM(codigo_fornecedor)));
+    `)
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_produto_fornecedor_produto
+      ON produto_fornecedor (produto_id);
+    `)
+
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_ncm_codigo
       ON ncm (codigo);
     `)

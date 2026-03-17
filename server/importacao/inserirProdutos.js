@@ -1,6 +1,7 @@
 const { from: copyFrom } = require('pg-copy-streams')
 const { pipeline } = require('stream/promises')
 const { Readable } = require('stream')
+const { registrarHistoricoProdutosImportados } = require('../services/historicoProdutosService')
 
 function escapeCsvValue(value) {
   if (value === null || value === undefined) {
@@ -129,6 +130,8 @@ async function inserirProdutos(client, usuarioId, produtos) {
     `,
     [usuarioId]
   )
+
+  await registrarHistoricoProdutosImportados(client, usuarioId)
 
   return {
     inseridos: insertResult.rowCount || 0,

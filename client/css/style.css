@@ -1622,6 +1622,15 @@ tbody tr[data-product-row-id]{
   margin-top:18px;
 }
 
+.xml-pending-row{
+  background:color-mix(in srgb, var(--danger) 7%, var(--panel) 93%);
+}
+
+.xml-produto-select{
+  min-width:240px;
+  width:100%;
+}
+
 .auth-links a{
   color:#0f62fe;
   font-weight:700;
