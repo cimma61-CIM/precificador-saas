@@ -14,57 +14,28 @@
       <div class="page-header">
         <div>
           <h1>Categorias</h1>
-          <p>Gerencie categorias por canal, com suporte a marketplace especifico e canais proprios.</p>
+          <p>Gerencie as categorias dos produtos em uma tela simples e direta.</p>
         </div>
       </div>
 
       <div class="card">
-        <h2 id="categoria-form-titulo">Nova categoria</h2>
-        <p class="card-subtitle">Use categorias globais para loja virtual/venda direta ou vincule a um marketplace especifico.</p>
+        <div class="toolbar">
+          <h2>Nova categoria</h2>
+          <button type="button" class="button-primary" id="nova-categoria-toggle">Nova categoria</button>
+        </div>
+        <p class="card-subtitle">Crie categorias para organizar a listagem de produtos.</p>
 
-        <form id="categoria-form">
-          <input id="categoria-id" type="hidden">
-
+        <form id="categoria-form" class="hidden">
           <div class="form-grid">
             <div class="field">
               <label for="categoria-nome">Nome</label>
               <input id="categoria-nome" required placeholder="Ex.: Eletronicos">
             </div>
-            <div class="field">
-              <label for="categoria-slug">Slug</label>
-              <input id="categoria-slug" placeholder="eletronicos">
-            </div>
-            <div class="field">
-              <label for="categoria-tipo-canal">Tipo de canal</label>
-              <select id="categoria-tipo-canal" required>
-                <option value="loja_virtual">Loja virtual</option>
-                <option value="venda_direta">Venda direta</option>
-                <option value="marketplace">Marketplace</option>
-              </select>
-            </div>
-            <div class="field hidden" id="categoria-marketplace-field">
-              <label for="categoria-marketplace-id">Marketplace</label>
-              <select id="categoria-marketplace-id">
-                <option value="">Selecione um marketplace</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="categoria-ativa">Status</label>
-              <select id="categoria-ativa">
-                <option value="true">Ativa</option>
-                <option value="false">Inativa</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="categoria-descricao">Descricao</label>
-            <textarea id="categoria-descricao" placeholder="Descricao opcional"></textarea>
           </div>
 
           <div class="form-actions">
-            <button type="submit" class="button-primary" id="categoria-submit-button">Salvar categoria</button>
-            <button type="button" class="button-secondary hidden" id="categoria-cancelar-button">Cancelar edicao</button>
+            <button type="submit" class="button-primary">Salvar categoria</button>
+            <button type="button" class="button-secondary" id="categoria-cancelar-button">Cancelar</button>
           </div>
         </form>
 
@@ -73,16 +44,7 @@
 
       <div class="card table-card">
         <div class="toolbar">
-          <input id="categorias-busca" class="search-input" placeholder="Buscar categoria por nome, slug ou marketplace">
-          <select id="categorias-filtro-tipo">
-            <option value="">Todos os canais</option>
-            <option value="loja_virtual">Loja virtual</option>
-            <option value="venda_direta">Venda direta</option>
-            <option value="marketplace">Marketplace</option>
-          </select>
-          <select id="categorias-filtro-marketplace">
-            <option value="">Todos os marketplaces</option>
-          </select>
+          <input id="categorias-busca" class="search-input" placeholder="Buscar categoria por nome">
           <button type="button" class="button-secondary" id="categorias-atualizar-button">Atualizar</button>
         </div>
 
@@ -91,16 +53,13 @@
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>Slug</th>
-                <th>Canal</th>
-                <th>Marketplace</th>
-                <th>Status</th>
+                <th>Criada em</th>
                 <th>Acoes</th>
               </tr>
             </thead>
             <tbody id="categorias-tabela">
               <tr>
-                <td colspan="6">Carregando categorias...</td>
+                <td colspan="3">Carregando categorias...</td>
               </tr>
             </tbody>
           </table>
@@ -113,7 +72,6 @@
 <script src="/js/theme.js"></script>
 <script src="/js/app-api.js"></script>
 <script src="/js/app-layout.js"></script>
-<script src="/js/marketplaces-source.js"></script>
 <script src="/js/categorias.js"></script>
 
 </body>

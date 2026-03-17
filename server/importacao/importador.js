@@ -8,6 +8,11 @@ const validarProduto = require('./validarProduto')
 const detectarDuplicados = require('./detectarDuplicados')
 const inserirProdutos = require('./inserirProdutos')
 const criarRelatorioImportacao = require('./relatorioImportacao')
+const {
+  normalizarChaveCategoria,
+  normalizarNomeCategoria,
+  slugifyCategoria
+} = require('../utils/categorias')
 
 const MAX_PRODUTOS_IMPORTACAO = 50
 
@@ -94,33 +99,120 @@ function normalizarEValidarProdutos(produtos, { tolerarErros = false } = {}) {
   return { validos, erros }
 }
 
-async function carregarCategoriasPorNome(usuarioId, produtos) {
-  const nomes = [...new Set(produtos.map((produto) => produto.categoria).filter(Boolean).map((nome) => nome.toLowerCase()))]
+async function carregarCategoriasPorNome(db, usuarioId, produtos) {
+  const categoriasInformadas = produtos
+    .map((produto) => produto.categoria)
+    .filter(Boolean)
+  const slugs = [...new Set(categoriasInformadas.map((nome) => slugifyCategoria(nome)).filter(Boolean))]
+  const nomesNormalizados = [...new Set(categoriasInformadas.map((nome) => normalizarNomeCategoria(nome).toLowerCase()).filter(Boolean))]
 
-  if (!nomes.length) {
+  if (!slugs.length && !nomesNormalizados.length) {
     return new Map()
   }
 
-  const result = await pool.query(
+  const result = await db.query(
     `
-    SELECT id, nome
+    SELECT id, nome, slug
     FROM categorias
     WHERE usuario_id = $1
-      AND LOWER(nome) = ANY($2::text[])
+      AND (
+        (array_length($2::text[], 1) IS NOT NULL AND LOWER(COALESCE(slug, '')) = ANY($2::text[]))
+        OR (
+          array_length($3::text[], 1) IS NOT NULL
+          AND LOWER(REGEXP_REPLACE(TRIM(nome), '\s+', ' ', 'g')) = ANY($3::text[])
+        )
+      )
     `,
-    [usuarioId, nomes]
+    [usuarioId, slugs, nomesNormalizados]
   )
 
-  return new Map(result.rows.map((row) => [String(row.nome).trim().toLowerCase(), row.id]))
+  const categoriasPorNome = new Map()
+
+  for (const row of result.rows) {
+    const chaves = new Set([
+      normalizarChaveCategoria(row.nome),
+      normalizarChaveCategoria(row.slug)
+    ])
+
+    for (const chave of chaves) {
+      if (chave) {
+        categoriasPorNome.set(chave, row.id)
+      }
+    }
+  }
+
+  return categoriasPorNome
 }
 
-async function resolverCategorias(usuarioId, produtos, errosExistentes = []) {
-  const categoriasPorNome = await carregarCategoriasPorNome(usuarioId, produtos)
+async function criarCategoriaSeNecessario(db, usuarioId, nomeCategoria) {
+  const nome = normalizarNomeCategoria(nomeCategoria)
+  const slug = slugifyCategoria(nome)
+
+  if (!nome || !slug) {
+    return null
+  }
+
+  try {
+    const result = await db.query(
+      `
+      INSERT INTO categorias (nome, slug, descricao, tipo_canal, marketplace_id, usuario_id, ativa)
+      VALUES ($1, $2, NULL, 'loja_virtual', NULL, $3, true)
+      RETURNING id
+      `,
+      [nome, slug, usuarioId]
+    )
+
+    return result.rows[0]?.id || null
+  } catch (error) {
+    if (error.code !== '23505') {
+      throw error
+    }
+
+    const existente = await db.query(
+      `
+      SELECT id
+      FROM categorias
+      WHERE usuario_id = $1
+        AND LOWER(COALESCE(slug, '')) = $2
+      LIMIT 1
+      `,
+      [usuarioId, slug]
+    )
+
+    return existente.rows[0]?.id || null
+  }
+}
+
+async function garantirCategorias(db, usuarioId, produtos, categoriasPorNome) {
+  const categoriasPendentes = new Map()
+
+  for (const produto of produtos) {
+    const chave = normalizarChaveCategoria(produto.categoria)
+
+    if (!chave || categoriasPorNome.has(chave) || categoriasPendentes.has(chave)) {
+      continue
+    }
+
+    categoriasPendentes.set(chave, normalizarNomeCategoria(produto.categoria))
+  }
+
+  for (const [chave, nomeCategoria] of categoriasPendentes.entries()) {
+    const categoriaId = await criarCategoriaSeNecessario(db, usuarioId, nomeCategoria)
+
+    if (categoriaId) {
+      categoriasPorNome.set(chave, categoriaId)
+    }
+  }
+}
+
+async function resolverCategorias(db, usuarioId, produtos, errosExistentes = []) {
+  const categoriasPorNome = await carregarCategoriasPorNome(db, usuarioId, produtos)
+  await garantirCategorias(db, usuarioId, produtos, categoriasPorNome)
   const validos = []
   const erros = [...errosExistentes]
 
   for (const produto of produtos) {
-    const categoriaKey = produto.categoria ? produto.categoria.toLowerCase() : ''
+    const categoriaKey = normalizarChaveCategoria(produto.categoria)
     const categoriaId = categoriaKey ? categoriasPorNome.get(categoriaKey) || null : null
 
     if (categoriaKey && !categoriaId) {
@@ -177,18 +269,17 @@ async function importarArquivo(usuarioId, arquivo, options = {}) {
     ...options,
     tolerarErros: true
   })
-  const categoriasResolvidas = await resolverCategorias(usuarioId, validos, errosValidacao)
-  const duplicados = await detectarDuplicados(usuarioId, categoriasResolvidas.validos)
-  const erros = [...categoriasResolvidas.erros, ...duplicados.erros]
-  const produtosParaPersistir = [
-    ...duplicados.novos.map((produto) => ({ ...produto, acao: 'insert' })),
-    ...duplicados.atualizaveis.map((produto) => ({ ...produto, acao: 'update' }))
-  ]
-
   const client = await pool.connect()
 
   try {
     await client.query('BEGIN')
+    const categoriasResolvidas = await resolverCategorias(client, usuarioId, validos, errosValidacao)
+    const duplicados = await detectarDuplicados(usuarioId, categoriasResolvidas.validos)
+    const erros = [...categoriasResolvidas.erros, ...duplicados.erros]
+    const produtosParaPersistir = [
+      ...duplicados.novos.map((produto) => ({ ...produto, acao: 'insert' })),
+      ...duplicados.atualizaveis.map((produto) => ({ ...produto, acao: 'update' }))
+    ]
     const { inseridos, atualizados } = await inserirProdutos(client, usuarioId, produtosParaPersistir)
     await client.query('COMMIT')
 

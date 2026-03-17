@@ -1,16 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const pool = require('../db')
-
-function slugifyCategoria(valor) {
-  return String(valor || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-}
+const { slugifyCategoria } = require('../utils/categorias')
 
 function normalizarTexto(valor) {
   return String(valor || '').trim()
@@ -343,7 +334,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const usuarioId = req.user.id
   const categoriaId = Number.parseInt(req.params.id, 10)
-  const hardDelete = String(req.query.hard || '').trim() === 'true'
+  const hardDelete = String(req.query.hard || 'true').trim() !== 'false'
 
   if (!Number.isInteger(categoriaId) || categoriaId <= 0) {
     return res.status(400).json({ erro: 'ID invalido' })

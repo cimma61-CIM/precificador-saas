@@ -28,6 +28,7 @@
       children: [
         { id: 'produto-novo', href: '/produtos-novo.html', label: 'Novo produto' },
         { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos cadastrados' },
+        { id: 'categorias', href: '/categorias.html', label: 'Categorias' },
         { id: 'importar-produtos', href: '/importar-produtos.html', label: 'Importar produtos' }
       ]
     },
