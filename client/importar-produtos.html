@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Importar produtos</title>
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/style.css?v=3">
 </head>
 <body data-app-page="importar-produtos">
 
@@ -25,7 +25,11 @@
 
         <div class="field">
           <label for="arquivo-importacao">Selecionar planilha (.xlsx)</label>
-          <input type="file" id="arquivo-importacao" accept=".xlsx">
+          <input type="file" id="arquivo-importacao" accept=".xlsx" hidden>
+          <div class="form-actions">
+            <button id="btnUpload" type="button" class="button-primary">Escolher arquivo</button>
+            <span id="nomeArquivo" class="text-soft">Nenhum arquivo escolhido</span>
+          </div>
           <small class="field-help">Maximo de 50 produtos por planilha.</small>
         </div>
 
@@ -35,6 +39,41 @@
         </div>
 
         <div id="importacao-feedback" class="feedback"></div>
+
+        <div id="importacao-validacao-card" class="card hidden">
+          <h2>Validacao da planilha</h2>
+          <div class="summary-strip">
+            <div class="summary-item">
+              <span>Validos</span>
+              <strong id="validacao-validos">0</strong>
+            </div>
+            <div class="summary-item">
+              <span>Com erro</span>
+              <strong id="validacao-erros">0</strong>
+            </div>
+          </div>
+          <div id="validacao-erros-lista" class="stack-block hidden"></div>
+          <div id="importacao-preview-wrapper" class="stack-block hidden">
+            <h2>Preview da planilha</h2>
+            <div class="table-wrap importacao-preview-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Nome</th>
+                    <th>EAN</th>
+                    <th>Custo</th>
+                    <th>Preco venda</th>
+                    <th>Margem desejada</th>
+                    <th>Categoria</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="importacao-preview-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="importacao-analise-card" class="card hidden">
@@ -80,6 +119,7 @@
 <script src="/js/theme.js"></script>
 <script src="/js/app-api.js"></script>
 <script src="/js/app-layout.js"></script>
+<script src="/js/vendor/xlsx.full.min.js"></script>
 <script src="/js/importar-produtos.js"></script>
 
 </body>

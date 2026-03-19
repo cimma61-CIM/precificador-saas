@@ -16,6 +16,27 @@ function setResultadoFeedback(mensagem, tipo = '') {
   feedback.textContent = mensagem
 }
 
+function setAnaliseFeedback(mensagem, tipo = '') {
+  const feedback = document.getElementById('simulador-analise-feedback')
+  feedback.className = `feedback ${tipo}`.trim()
+  feedback.textContent = mensagem
+}
+
+function setResultadoSugestao(mensagem) {
+  const sugestao = document.getElementById('simulador-resultado-sugestao')
+  sugestao.textContent = mensagem
+}
+
+function atualizarEtapasSimulador(etapa) {
+  const etapaSimulacao = document.getElementById('simulador-etapa-simulacao')
+  const etapaConcorrencia = document.getElementById('simulador-etapa-concorrencia')
+  const etapaResultado = document.getElementById('simulador-etapa-resultado')
+
+  etapaSimulacao.classList.remove('hidden')
+  etapaConcorrencia.classList.toggle('hidden', etapa !== 'concorrencia' && etapa !== 'resultado')
+  etapaResultado.classList.toggle('hidden', etapa !== 'resultado')
+}
+
 function formatarMoeda(valor) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -58,7 +79,8 @@ function calcularIndicadoresPorPreco(custo, taxa, precoFinal) {
   return {
     preco_sugerido: Number(preco.toFixed(2)),
     lucro_estimado: Number(lucro.toFixed(2)),
-    margem_real: preco > 0 ? Number((lucro / preco).toFixed(4)) : 0
+    margem_real: preco > 0 ? Number((lucro / preco).toFixed(4)) : 0,
+    roi: custoBase > 0 ? Number((lucro / custoBase).toFixed(4)) : 0
   }
 }
 
@@ -83,6 +105,184 @@ function calcularPrecoSimulado(custo, margem, taxa) {
     ...calcularIndicadoresPorPreco(custoBase, taxa, preco),
     erro: ''
   }
+}
+
+function calcularPrecoMinimo(custo, taxa) {
+  const custoBase = normalizarValorMonetarioInput(custo)
+  const taxaPercentual = normalizarPercentualInput(taxa.taxa_percentual)
+  const taxaFixa = normalizarValorMonetarioInput(taxa.taxa_fixa)
+  const freteMedio = normalizarValorMonetarioInput(taxa.frete_medio)
+  const indiceExtra = normalizarPercentualInput(taxa.indice_extra_percentual)
+  const imposto = normalizarPercentualInput(taxa.imposto_percentual)
+  const custos = custoBase + taxaFixa + freteMedio
+  const taxas = taxaPercentual + imposto + indiceExtra
+  const divisor = 1 - taxas
+
+  if (divisor <= 0) {
+    return {
+      erro: 'Taxas somam 100% ou mais'
+    }
+  }
+
+  return {
+    preco_minimo: Number((custos / divisor).toFixed(2)),
+    erro: ''
+  }
+}
+
+function analisarPreco(preco, custo, taxaPercentual, taxaFixa, impostoPercentual, adsPercentual) {
+  const precoNormalizado = Number(preco || 0)
+  const custoNormalizado = Number(custo || 0)
+  const taxaPercentualNormalizada = Number(taxaPercentual || 0)
+  const taxaFixaNormalizada = Number(taxaFixa || 0)
+  const impostoPercentualNormalizado = Number(impostoPercentual || 0)
+  const adsPercentualNormalizado = Number(adsPercentual || 0)
+  const tarifa = (precoNormalizado * taxaPercentualNormalizada) + taxaFixaNormalizada
+  const imposto = precoNormalizado * impostoPercentualNormalizado
+  const ads = precoNormalizado * adsPercentualNormalizado
+  const lucro = precoNormalizado - custoNormalizado - tarifa - imposto - ads
+  const margem = precoNormalizado > 0 ? lucro / precoNormalizado : 0
+  const roi = custoNormalizado > 0 ? lucro / custoNormalizado : 0
+
+  return {
+    lucro: Number(lucro.toFixed(2)),
+    margem: Number(margem.toFixed(4)),
+    roi: Number(roi.toFixed(4))
+  }
+}
+
+function obterStatusResultado(lucro, margem) {
+  if (Number(lucro) < 0) {
+    return '\u{1F534} Prejuizo'
+  }
+
+  if (Number(margem) < 0.2) {
+    return '\u{1F7E1} Baixa margem'
+  }
+
+  return '\u{1F7E2} Saudavel'
+}
+
+function obterSugestaoResultado(lucro, margem) {
+  if (Number(lucro) < 0) {
+    return 'Preco inviavel, abaixo do custo real'
+  }
+
+  if (Number(margem) < 0.2) {
+    return 'Margem baixa, considere aumentar preco'
+  }
+
+  return 'Preco competitivo e saudavel'
+}
+
+function obterStatusConcorrencia(precoConcorrente, precoMinimo, precoIdeal) {
+  const concorrente = Number(precoConcorrente || 0)
+  const minimo = Number(precoMinimo || 0)
+  const ideal = Number(precoIdeal || 0)
+
+  if (concorrente < minimo) {
+    return '\u{1F534} Prejuizo garantido'
+  }
+
+  if (concorrente < ideal) {
+    return '\u{1F7E1} Margem baixa'
+  }
+
+  return '\u{1F7E2} Saudavel'
+}
+
+function obterSugestaoConcorrencia(precoConcorrente, precoMinimo, precoIdeal) {
+  const concorrente = Number(precoConcorrente || 0)
+  const minimo = Number(precoMinimo || 0)
+  const ideal = Number(precoIdeal || 0)
+
+  if (concorrente < minimo) {
+    return 'Concorrente abaixo do preco minimo viavel.'
+  }
+
+  if (concorrente < ideal) {
+    return 'Da para competir, mas com margem comprimida.'
+  }
+
+  return 'Faixa saudavel para competir com rentabilidade.'
+}
+
+function limparResultados() {
+  document.getElementById('sim-resultado-lucro').textContent = '--'
+  document.getElementById('sim-resultado-margem').textContent = '--'
+  document.getElementById('sim-resultado-roi').textContent = '--'
+  document.getElementById('sim-resultado-status').textContent = '--'
+}
+
+function limparComparativoConcorrencia() {
+  document.getElementById('sim-analise-minimo').textContent = '--'
+  document.getElementById('sim-analise-ideal').textContent = '--'
+  document.getElementById('sim-analise-concorrente').textContent = '--'
+}
+
+function resetarFluxoSimulador() {
+  setResultadoFeedback('')
+  setAnaliseFeedback('')
+  setResultadoSugestao('')
+  document.getElementById('sim-resultado-preco').textContent = '--'
+  limparResultados()
+  limparComparativoConcorrencia()
+  atualizarEtapasSimulador('simulacao')
+}
+
+function atualizarResultados(resultado) {
+  const lucro = Number(resultado.lucro_estimado ?? resultado.lucro ?? 0)
+  const margem = Number(resultado.margem_real ?? resultado.margem ?? 0)
+  const roi = Number(resultado.roi ?? 0)
+
+  document.getElementById('sim-resultado-lucro').textContent = formatarMoeda(lucro)
+  document.getElementById('sim-resultado-margem').textContent = formatarPercentual(margem)
+  document.getElementById('sim-resultado-roi').textContent = formatarPercentual(roi)
+}
+
+function atualizarPrecoSugerido(valor) {
+  document.getElementById('sim-resultado-preco').textContent = formatarMoeda(valor)
+}
+
+function obterTaxasAtuais() {
+  return {
+    taxa_percentual: document.getElementById('sim-taxa-percentual').value,
+    taxa_fixa: document.getElementById('sim-taxa-fixa').value,
+    frete_medio: document.getElementById('sim-frete-medio').value,
+    indice_extra_percentual: document.getElementById('sim-indice-extra').value,
+    imposto_percentual: document.getElementById('sim-imposto').value
+  }
+}
+
+function atualizarPainelConcorrencia() {
+  const taxa = obterTaxasAtuais()
+  const custo = document.getElementById('sim-custo').value
+  const margem = document.getElementById('sim-margem').value
+  const precoConcorrenteRaw = document.getElementById('precoConcorrente').value
+  const minimo = calcularPrecoMinimo(custo, taxa)
+  const ideal = calcularPrecoSimulado(custo, margem, taxa)
+
+  if (minimo.erro || ideal.erro) {
+    limparComparativoConcorrencia()
+    if (ideal.erro) {
+      document.getElementById('sim-analise-ideal').textContent = ideal.erro
+    }
+    if (minimo.erro) {
+      document.getElementById('sim-analise-minimo').textContent = minimo.erro
+    }
+    return { minimo, ideal }
+  }
+
+  document.getElementById('sim-analise-minimo').textContent = formatarMoeda(minimo.preco_minimo)
+  document.getElementById('sim-analise-ideal').textContent = formatarMoeda(ideal.preco_sugerido)
+
+  if (precoConcorrenteRaw && Number(precoConcorrenteRaw) > 0) {
+    document.getElementById('sim-analise-concorrente').textContent = formatarMoeda(precoConcorrenteRaw)
+  } else {
+    document.getElementById('sim-analise-concorrente').textContent = '--'
+  }
+
+  return { minimo, ideal }
 }
 
 function getProdutoSelecionado() {
@@ -159,7 +359,7 @@ function renderResumoProduto() {
     conteudo.classList.add('hidden')
     cardCenario.classList.add('hidden')
     tabela.innerHTML = ''
-    setResultadoFeedback('')
+    resetarFluxoSimulador()
     return
   }
 
@@ -168,6 +368,7 @@ function renderResumoProduto() {
   vazio.classList.add('hidden')
   conteudo.classList.remove('hidden')
   cardCenario.classList.remove('hidden')
+  atualizarEtapasSimulador('simulacao')
 
   if (!Array.isArray(produto.marketplaces) || !produto.marketplaces.length) {
     tabela.innerHTML = `
@@ -176,6 +377,8 @@ function renderResumoProduto() {
       </tr>
     `
     document.getElementById('sim-marketplace').innerHTML = '<option value="">Sem marketplaces</option>'
+    resetarFluxoSimulador()
+    atualizarEtapasSimulador('simulacao')
     return
   }
 
@@ -196,7 +399,8 @@ function renderResumoProduto() {
 
   preencherSelectMarketplaces(produto)
   preencherCamposCenario()
-  calcularCenario()
+  resetarFluxoSimulador()
+  atualizarPainelConcorrencia()
 }
 
 async function carregarProdutosSimulador() {
@@ -260,11 +464,7 @@ function calcularCenario() {
   }
 
   const taxa = {
-    taxa_percentual: document.getElementById('sim-taxa-percentual').value,
-    taxa_fixa: document.getElementById('sim-taxa-fixa').value,
-    frete_medio: document.getElementById('sim-frete-medio').value,
-    indice_extra_percentual: document.getElementById('sim-indice-extra').value,
-    imposto_percentual: document.getElementById('sim-imposto').value
+    ...obterTaxasAtuais()
   }
 
   const resultado = calcularPrecoSimulado(
@@ -275,16 +475,65 @@ function calcularCenario() {
 
   if (resultado.erro) {
     document.getElementById('sim-resultado-preco').textContent = '--'
-    document.getElementById('sim-resultado-lucro').textContent = '--'
-    document.getElementById('sim-resultado-margem').textContent = '--'
     setResultadoFeedback(resultado.erro, 'text-danger')
     return
   }
 
-  document.getElementById('sim-resultado-preco').textContent = formatarMoeda(resultado.preco_sugerido)
-  document.getElementById('sim-resultado-lucro').textContent = formatarMoeda(resultado.lucro_estimado)
-  document.getElementById('sim-resultado-margem').textContent = formatarPercentual(resultado.margem_real)
+  atualizarPrecoSugerido(resultado.preco_sugerido)
+  atualizarPainelConcorrencia()
   setResultadoFeedback('Simulacao calculada sem alterar os dados reais do produto.', 'text-success')
+  atualizarEtapasSimulador('concorrencia')
+}
+
+function analisarPrecoInformado() {
+  const marketplaceId = Number(document.getElementById('sim-marketplace').value)
+  const produto = getProdutoSelecionado()
+  const marketplace = (produto?.marketplaces || []).find((item) => Number(item.id) === marketplaceId)
+
+  if (!produto || !marketplace) {
+    setAnaliseFeedback('Selecione um produto e marketplace para analisar o preco.', 'text-danger')
+    return
+  }
+
+  const preco = parseFloat(document.getElementById('precoConcorrente').value)
+
+  if (!preco || preco <= 0) {
+    window.alert('Informe um preco valido')
+    return
+  }
+
+  const comparativo = atualizarPainelConcorrencia()
+
+  if (comparativo.minimo.erro || comparativo.ideal.erro) {
+    setAnaliseFeedback(comparativo.minimo.erro || comparativo.ideal.erro, 'text-danger')
+    return
+  }
+
+  const custo = Number(document.getElementById('sim-custo').value || 0)
+  const taxaPercentual = normalizarPercentualInput(document.getElementById('sim-taxa-percentual').value)
+  const taxaFixa = Number(document.getElementById('sim-taxa-fixa').value || 0)
+  const impostoPercentual = normalizarPercentualInput(document.getElementById('sim-imposto').value)
+  const adsPercentual = normalizarPercentualInput(document.getElementById('sim-indice-extra').value)
+  const resultado = analisarPreco(
+    preco,
+    custo,
+    taxaPercentual,
+    taxaFixa,
+    impostoPercentual,
+    adsPercentual
+  )
+
+  atualizarResultados(resultado)
+  document.getElementById('sim-resultado-status').textContent = obterStatusConcorrencia(
+    preco,
+    comparativo.minimo.preco_minimo,
+    comparativo.ideal.preco_sugerido
+  )
+  setResultadoSugestao(
+    obterSugestaoConcorrencia(preco, comparativo.minimo.preco_minimo, comparativo.ideal.preco_sugerido)
+  )
+  setAnaliseFeedback('Preco analisado sem alterar o preco sugerido.', 'text-success')
+  atualizarEtapasSimulador('resultado')
 }
 
 document.getElementById('simulador-busca-produto').addEventListener('input', function () {
@@ -304,8 +553,25 @@ document.getElementById('simulador-busca-produto').addEventListener('input', fun
 document.getElementById('simulador-atualizar-button').addEventListener('click', carregarProdutosSimulador)
 document.getElementById('sim-marketplace').addEventListener('change', () => {
   preencherCamposCenario()
-  calcularCenario()
+  resetarFluxoSimulador()
+  atualizarPainelConcorrencia()
 })
 document.getElementById('simulador-calcular-button').addEventListener('click', calcularCenario)
+document.getElementById('simulador-analisar-button').addEventListener('click', analisarPrecoInformado)
+
+;[
+  'sim-custo',
+  'sim-margem',
+  'sim-taxa-percentual',
+  'sim-taxa-fixa',
+  'sim-frete-medio',
+  'sim-indice-extra',
+  'sim-imposto',
+  'precoConcorrente'
+].forEach((id) => {
+  document.getElementById(id).addEventListener('input', () => {
+    atualizarPainelConcorrencia()
+  })
+})
 
 carregarProdutosSimulador()

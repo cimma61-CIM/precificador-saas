@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulador de preco</title>
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/style.css?v=3">
 </head>
 <body data-app-page="simulador-preco">
 
@@ -76,65 +76,132 @@
             </div>
           </div>
 
-          <div id="simulador-cenario-card" class="card hidden">
-            <h2>Cenario simulado</h2>
-            <p class="card-subtitle">Ajuste custo, margem ou taxas para comparar o resultado antes de qualquer alteracao real.</p>
+          <div id="simulador-cenario-card" class="simulador-flow hidden">
+            <div id="simulador-etapa-simulacao" class="card simulador-flow-card">
+              <div class="simulador-step-header">
+                <span class="simulador-step-badge">Etapa 1</span>
+                <div>
+                  <h2>Simulacao</h2>
+                  <p class="card-subtitle">Ajuste custo, margem e taxas para formar o preco ideal sem alterar dados reais.</p>
+                </div>
+              </div>
 
-            <div class="form-grid">
-              <div class="field">
-                <label for="sim-custo">Custo</label>
-                <input id="sim-custo" type="number" step="0.01">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="sim-custo">Custo</label>
+                  <input id="sim-custo" type="number" step="0.01">
+                </div>
+                <div class="field">
+                  <label for="sim-marketplace">Marketplace</label>
+                  <select id="sim-marketplace"></select>
+                </div>
+                <div class="field">
+                  <label for="sim-margem">Margem alvo</label>
+                  <input id="sim-margem" type="number" step="0.0001">
+                </div>
+                <div class="field">
+                  <label for="sim-taxa-percentual">Taxa percentual</label>
+                  <input id="sim-taxa-percentual" type="number" step="0.0001">
+                </div>
+                <div class="field">
+                  <label for="sim-taxa-fixa">Taxa fixa</label>
+                  <input id="sim-taxa-fixa" type="number" step="0.01">
+                </div>
+                <div class="field">
+                  <label for="sim-frete-medio">Frete medio</label>
+                  <input id="sim-frete-medio" type="number" step="0.01">
+                </div>
+                <div class="field">
+                  <label for="sim-indice-extra">Indices extras</label>
+                  <input id="sim-indice-extra" type="number" step="0.0001">
+                </div>
+                <div class="field">
+                  <label for="sim-imposto">Imposto percentual</label>
+                  <input id="sim-imposto" type="number" step="0.0001">
+                </div>
               </div>
-              <div class="field">
-                <label for="sim-marketplace">Marketplace</label>
-                <select id="sim-marketplace"></select>
+
+              <div class="form-actions">
+                <button id="simulador-calcular-button" type="button" class="button-primary">Calcular simulacao</button>
               </div>
-              <div class="field">
-                <label for="sim-margem">Margem alvo</label>
-                <input id="sim-margem" type="number" step="0.0001">
+
+              <div id="simulador-resultado-feedback" class="feedback"></div>
+            </div>
+
+            <div id="simulador-etapa-concorrencia" class="card simulador-flow-card simulador-analise-card hidden">
+              <div class="simulador-step-header">
+                <span class="simulador-step-badge">Etapa 2</span>
+                <div>
+                  <h2>Concorrencia</h2>
+                  <p class="card-subtitle">Compare concorrente, preco minimo viavel e preco ideal antes de decidir competir.</p>
+                </div>
               </div>
-              <div class="field">
-                <label for="sim-taxa-percentual">Taxa percentual</label>
-                <input id="sim-taxa-percentual" type="number" step="0.0001">
-              </div>
-              <div class="field">
-                <label for="sim-taxa-fixa">Taxa fixa</label>
-                <input id="sim-taxa-fixa" type="number" step="0.01">
-              </div>
-              <div class="field">
-                <label for="sim-frete-medio">Frete medio</label>
-                <input id="sim-frete-medio" type="number" step="0.01">
-              </div>
-              <div class="field">
-                <label for="sim-indice-extra">Indices extras</label>
-                <input id="sim-indice-extra" type="number" step="0.0001">
-              </div>
-              <div class="field">
-                <label for="sim-imposto">Imposto percentual</label>
-                <input id="sim-imposto" type="number" step="0.0001">
+
+              <div class="simulador-tab-section">
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="precoConcorrente">Simular preco do concorrente</label>
+                    <input id="precoConcorrente" type="number" step="0.01" placeholder="Ex: 26.66">
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button id="simulador-analisar-button" type="button" class="button-secondary">Analisar preco</button>
+                </div>
+
+                <div class="summary-strip simulador-comparativo-strip">
+                  <div class="summary-item">
+                    <span>Preco minimo</span>
+                    <strong id="sim-analise-minimo">--</strong>
+                  </div>
+                  <div class="summary-item">
+                    <span>Preco ideal</span>
+                    <strong id="sim-analise-ideal">--</strong>
+                  </div>
+                  <div class="summary-item">
+                    <span>Concorrente</span>
+                    <strong id="sim-analise-concorrente">--</strong>
+                  </div>
+                </div>
+
+                <div id="simulador-analise-feedback" class="feedback"></div>
               </div>
             </div>
 
-            <div class="form-actions">
-              <button id="simulador-calcular-button" type="button" class="button-primary">Calcular simulacao</button>
-            </div>
+            <div id="simulador-etapa-resultado" class="card simulador-flow-card hidden">
+              <div class="simulador-step-header">
+                <span class="simulador-step-badge">Etapa 3</span>
+                <div>
+                  <h2>Resultado</h2>
+                  <p class="card-subtitle">Revise o preco sugerido e o impacto da concorrencia antes de decidir.</p>
+                </div>
+              </div>
 
-            <div class="summary-strip">
-              <div class="summary-item">
-                <span>Preco sugerido</span>
-                <strong id="sim-resultado-preco">--</strong>
+              <div class="summary-strip">
+                <div class="summary-item">
+                  <span>Preco sugerido</span>
+                  <strong id="sim-resultado-preco">--</strong>
+                </div>
+                <div class="summary-item">
+                  <span>Lucro estimado</span>
+                  <strong id="sim-resultado-lucro">--</strong>
+                </div>
+                <div class="summary-item">
+                  <span>Margem real</span>
+                  <strong id="sim-resultado-margem">--</strong>
+                </div>
+                <div class="summary-item">
+                  <span>ROI</span>
+                  <strong id="sim-resultado-roi">--</strong>
+                </div>
+                <div class="summary-item">
+                  <span>Status</span>
+                  <strong id="sim-resultado-status">--</strong>
+                </div>
               </div>
-              <div class="summary-item">
-                <span>Lucro estimado</span>
-                <strong id="sim-resultado-lucro">--</strong>
-              </div>
-              <div class="summary-item">
-                <span>Margem real</span>
-                <strong id="sim-resultado-margem">--</strong>
-              </div>
-            </div>
 
-            <div id="simulador-resultado-feedback" class="feedback"></div>
+              <div id="simulador-resultado-sugestao" class="text-soft"></div>
+            </div>
           </div>
         </div>
       </div>

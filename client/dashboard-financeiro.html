@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Financeiro | Precificador SaaS</title>
+  <link rel="stylesheet" href="/css/style.css?v=3">
+</head>
+<body data-app-page="dashboard-financeiro">
+  <main class="main-content">
+    <div class="finance-dashboard">
+      <header class="finance-hero">
+        <div class="finance-hero-copy">
+          <span class="finance-kicker">Painel financeiro</span>
+          <h1>Metricas consolidadas da operacao</h1>
+          <p id="finance-subtitle">
+            Carregando receita, custos e rentabilidade da base de produtos.
+          </p>
+        </div>
+        <div class="finance-hero-actions">
+          <a class="button-secondary" href="/dashboard.html">Dashboard principal</a>
+          <button id="finance-refresh-button" type="button">Atualizar metricas</button>
+        </div>
+      </header>
+
+      <section class="finance-summary-grid">
+        <article class="finance-card finance-card-accent">
+          <span class="finance-label">Receita total</span>
+          <strong id="metric-receita-total">R$ 0,00</strong>
+          <small>Soma do preco de venda dos produtos carregados</small>
+        </article>
+        <article class="finance-card">
+          <span class="finance-label">Lucro total</span>
+          <strong id="metric-lucro-total">R$ 0,00</strong>
+          <small>Receita menos custo, tarifa, imposto e ads</small>
+        </article>
+        <article class="finance-card">
+          <span class="finance-label">Margem media</span>
+          <strong id="metric-margem-media">0,00%</strong>
+          <small>Media ponderada sobre a receita total</small>
+        </article>
+        <article class="finance-card">
+          <span class="finance-label">ROI medio</span>
+          <strong id="metric-roi-medio">0,00%</strong>
+          <small>Retorno medio com base no custo investido</small>
+        </article>
+      </section>
+
+      <section class="finance-strip">
+        <article class="finance-mini-card">
+          <span>Produtos analisados</span>
+          <strong id="metric-produtos-analisados">0</strong>
+        </article>
+        <article class="finance-mini-card">
+          <span>Custo total</span>
+          <strong id="metric-custo-total">R$ 0,00</strong>
+        </article>
+        <article class="finance-mini-card">
+          <span>Tarifas + impostos + ads</span>
+          <strong id="metric-despesas-variaveis">R$ 0,00</strong>
+        </article>
+        <article class="finance-mini-card">
+          <span>Itens lucrativos</span>
+          <strong id="metric-itens-lucrativos">0</strong>
+        </article>
+        <article class="finance-mini-card">
+          <span title="Produtos com prejuizo, abaixo do minimo ou com margem muito baixa">Produtos em risco</span>
+          <strong id="metric-produtos-risco">0</strong>
+        </article>
+      </section>
+
+      <section class="finance-alert-board" aria-live="polite">
+        <div class="section-head">
+          <div>
+            <h2>Alertas da operacao</h2>
+            <p class="card-subtitle">Problemas e oportunidades detectados automaticamente a partir da carteira.</p>
+          </div>
+        </div>
+        <div id="alerta-dashboard" class="finance-alert"></div>
+        <div id="finance-alert-list" class="finance-alert-list"></div>
+      </section>
+
+      <section class="finance-layout-grid">
+        <article class="card table-card">
+          <div class="section-head">
+            <div>
+              <h2>Produtos com maior risco</h2>
+              <p class="card-subtitle">Ordenacao por pior margem primeiro, com badges e sugestoes de acao.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Receita</th>
+                  <th>Custo</th>
+                  <th>Lucro</th>
+                  <th title="Lucro dividido pela receita">Margem</th>
+                  <th title="Lucro dividido pelo custo">ROI</th>
+                  <th>Preco minimo</th>
+                  <th>Status</th>
+                  <th>Sugestao</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="finance-top-body">
+                <tr>
+                  <td colspan="10" class="table-empty-cell">Carregando dados...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card finance-side-card">
+          <div class="section-head">
+            <div>
+              <h2>Indicadores rapidos</h2>
+              <p class="card-subtitle">Resumo para identificar risco e concentracao.</p>
+            </div>
+          </div>
+
+          <div class="finance-side-metrics">
+            <div class="finance-side-item">
+              <span>Produtos com prejuizo</span>
+              <strong id="metric-itens-prejuizo">0</strong>
+            </div>
+            <div class="finance-side-item">
+              <span>Maior lucro unitario</span>
+              <strong id="metric-maior-lucro">R$ 0,00</strong>
+            </div>
+            <div class="finance-side-item">
+              <span>Pior margem</span>
+              <strong id="metric-pior-margem">0,00%</strong>
+            </div>
+            <div class="finance-side-item">
+              <span>Melhor ROI</span>
+              <strong id="metric-melhor-roi">0,00%</strong>
+            </div>
+          </div>
+
+          <div id="finance-feedback" class="feedback"></div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/theme.js"></script>
+  <script src="/js/app-api.js"></script>
+  <script src="/js/app-layout.js"></script>
+  <script src="/js/dashboard-financeiro.js"></script>
+</body>
+</html>
