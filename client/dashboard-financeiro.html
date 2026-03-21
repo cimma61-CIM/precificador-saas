@@ -80,6 +80,15 @@
         <div id="finance-alert-list" class="finance-alert-list"></div>
       </section>
 
+      <section>
+        <div class="card">
+          <h2>Desempenho de lucro</h2>
+          <div class="grafico-container">
+            <canvas id="graficoDashboard"></canvas>
+          </div>
+        </div>
+      </section>
+
       <section class="finance-layout-grid">
         <article class="card table-card">
           <div class="section-head">
@@ -123,7 +132,7 @@
           </div>
 
           <div class="finance-side-metrics">
-            <div class="finance-side-item">
+            <div class="finance-side-item" id="metric-itens-prejuizo-card">
               <span>Produtos com prejuizo</span>
               <strong id="metric-itens-prejuizo">0</strong>
             </div>
@@ -150,6 +159,8 @@
   <script src="/js/theme.js"></script>
   <script src="/js/app-api.js"></script>
   <script src="/js/app-layout.js"></script>
+  <script src="/js/dashboard-metricas.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/js/dashboard-financeiro.js"></script>
 </body>
 </html>

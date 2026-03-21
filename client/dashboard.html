@@ -16,6 +16,7 @@
           <p id="dashboard-subtitle">Carregando indicadores do seu ambiente...</p>
         </div>
         <div class="topbar-actions">
+          <a class="topbar-link" href="/dashboard-financeiro.html">Ver financeiro</a>
           <a class="topbar-link" href="/produtos-cadastrados.html">Gerenciar produtos</a>
         </div>
       </header>
@@ -103,8 +104,8 @@
           </div>
 
           <div class="side-metric-list">
-            <div class="side-metric danger">
-              <span>Produtos com margem negativa</span>
+            <div class="side-metric" id="metric-negative-card">
+              <span>Produtos com prejuizo</span>
               <strong id="metric-negative">--</strong>
             </div>
             <div class="side-metric">
@@ -121,6 +122,7 @@
   <script src="/js/theme.js"></script>
   <script src="/js/app-api.js"></script>
   <script src="/js/app-layout.js"></script>
+  <script src="/js/dashboard-metricas.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

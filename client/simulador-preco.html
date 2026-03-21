@@ -18,6 +18,30 @@
         </div>
       </div>
 
+      <div class="simulador-steps" id="simulador-steps">
+        <div class="simulador-step is-active" data-step="1">
+          <span class="simulador-step-index">1</span>
+          <div>
+            <strong>Produto</strong>
+            <span>Escolha um item da lista</span>
+          </div>
+        </div>
+        <div class="simulador-step" data-step="2">
+          <span class="simulador-step-index">2</span>
+          <div>
+            <strong>Simulacao</strong>
+            <span>Informe o preco do concorrente</span>
+          </div>
+        </div>
+        <div class="simulador-step" data-step="3">
+          <span class="simulador-step-index">3</span>
+          <div>
+            <strong>Resultado</strong>
+            <span>Revise lucro e margem</span>
+          </div>
+        </div>
+      </div>
+
       <div class="content-grid">
         <div class="card table-card">
           <div class="toolbar">
@@ -60,6 +84,21 @@
             </div>
 
             <div id="simulador-conteudo" class="hidden">
+              <div class="summary-strip simulador-produto-strip">
+                <div class="summary-item">
+                  <span>Produto</span>
+                  <strong id="simulador-produto-nome">--</strong>
+                </div>
+                <div class="summary-item">
+                  <span>Custo</span>
+                  <strong id="simulador-produto-custo">--</strong>
+                </div>
+                <div class="summary-item">
+                  <span>Preco atual</span>
+                  <strong id="simulador-produto-preco">--</strong>
+                </div>
+              </div>
+
               <div class="table-wrap">
                 <table>
                   <thead>
@@ -86,18 +125,43 @@
                 </div>
               </div>
 
+              <div class="form-actions">
+                <button
+                  id="simulador-modo-ideal"
+                  type="button"
+                  class="button-primary"
+                  data-simulador-mode="ideal"
+                  aria-pressed="true"
+                >
+                  Preco ideal
+                </button>
+                <button
+                  id="simulador-modo-reverso"
+                  type="button"
+                  class="button-secondary"
+                  data-simulador-mode="reverso"
+                  aria-pressed="false"
+                >
+                  Analisar concorrente
+                </button>
+              </div>
+
               <div class="form-grid">
                 <div class="field">
                   <label for="sim-custo">Custo</label>
                   <input id="sim-custo" type="number" step="0.01">
                 </div>
                 <div class="field">
-                  <label for="sim-marketplace">Marketplace</label>
-                  <select id="sim-marketplace"></select>
+                  <label for="marketplace">Marketplace</label>
+                  <select id="marketplace"></select>
                 </div>
-                <div class="field">
+                <div class="field" id="simulador-field-margem">
                   <label for="sim-margem">Margem alvo</label>
                   <input id="sim-margem" type="number" step="0.0001">
+                </div>
+                <div class="field hidden" id="simulador-field-preco-concorrente">
+                  <label for="precoConcorrente">Preco do concorrente</label>
+                  <input id="precoConcorrente" type="number" step="0.01" placeholder="Digite o preco do concorrente">
                 </div>
                 <div class="field">
                   <label for="sim-taxa-percentual">Taxa percentual</label>
@@ -140,8 +204,8 @@
               <div class="simulador-tab-section">
                 <div class="form-grid">
                   <div class="field">
-                    <label for="precoConcorrente">Simular preco do concorrente</label>
-                    <input id="precoConcorrente" type="number" step="0.01" placeholder="Ex: 26.66">
+                    <label for="precoConcorrenteComparativo">Simular preco do concorrente</label>
+                    <input id="precoConcorrenteComparativo" type="number" step="0.01" placeholder="Ex: 26.66">
                   </div>
                 </div>
 
@@ -177,26 +241,30 @@
                 </div>
               </div>
 
-              <div class="summary-strip">
-                <div class="summary-item">
-                  <span>Preco sugerido</span>
+              <div class="summary-strip simulador-resultado-strip">
+                <div class="summary-item simulador-resultado-card" id="sim-resultado-card-preco">
+                  <span id="sim-resultado-label-preco">Preco sugerido</span>
                   <strong id="sim-resultado-preco">--</strong>
                 </div>
-                <div class="summary-item">
-                  <span>Lucro estimado</span>
+                <div class="summary-item simulador-resultado-card" id="sim-resultado-card-lucro">
+                  <span id="sim-resultado-label-lucro">Lucro estimado</span>
                   <strong id="sim-resultado-lucro">--</strong>
                 </div>
-                <div class="summary-item">
-                  <span>Margem real</span>
+                <div class="summary-item simulador-resultado-card" id="sim-resultado-card-margem">
+                  <span id="sim-resultado-label-margem">Margem real</span>
                   <strong id="sim-resultado-margem">--</strong>
                 </div>
-                <div class="summary-item">
-                  <span>ROI</span>
+                <div class="summary-item simulador-resultado-card" id="sim-resultado-card-roi">
+                  <span id="sim-resultado-label-roi">ROI</span>
                   <strong id="sim-resultado-roi">--</strong>
                 </div>
-                <div class="summary-item">
+                <div class="summary-item simulador-resultado-card" id="sim-resultado-card-minimo">
+                  <span id="sim-resultado-label-minimo">Preco minimo</span>
+                  <strong id="sim-resultado-minimo">--</strong>
+                </div>
+                <div class="summary-item simulador-resultado-card" id="sim-resultado-card-status">
                   <span>Status</span>
-                  <strong id="sim-resultado-status">--</strong>
+                  <strong id="sim-resultado-status" class="simulador-status-chip">--</strong>
                 </div>
               </div>
 

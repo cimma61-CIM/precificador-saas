@@ -1,3 +1,9 @@
+void import('./featureFlags.js')
+  .then(({ featureFlags }) => {
+    window.featureFlags = window.featureFlags || featureFlags
+  })
+  .catch(() => {})
+
 let paginaAtual = 1
 let buscaAtual = ''
 let buscaTimer = null

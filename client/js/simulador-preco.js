@@ -1,13 +1,131 @@
+let simuladorFeatureFlags = window.featureFlags || {}
+let calcularPrecoIdealBase = window.precoIdealUtils?.calcularPrecoIdealBase || null
+
+void import('./featureFlags.js')
+  .then(({ featureFlags }) => {
+    simuladorFeatureFlags = window.featureFlags || featureFlags
+    window.featureFlags = simuladorFeatureFlags
+    atualizarResumoSelecionado(getProdutoSelecionado())
+  })
+  .catch(() => {})
+
+void import('./preco-ideal.js')
+  .then((modulo) => {
+    calcularPrecoIdealBase = modulo.calcularPrecoIdealBase
+    window.precoIdealUtils = window.precoIdealUtils || modulo
+    atualizarResumoSelecionado(getProdutoSelecionado())
+  })
+  .catch(() => {})
+
 let simuladorPaginaAtual = 1
 let simuladorBuscaAtual = ''
 let simuladorBuscaTimer = null
 let simuladorProdutosCache = []
 let simuladorProdutoSelecionadoId = null
+let simuladorModoAtual = 'ideal'
+const simuladorCamposIds = [
+  'sim-custo',
+  'marketplace',
+  'sim-margem',
+  'sim-taxa-percentual',
+  'sim-taxa-fixa',
+  'sim-frete-medio',
+  'sim-indice-extra',
+  'sim-imposto',
+  'precoConcorrente',
+  'precoConcorrenteComparativo',
+  'simulador-calcular-button',
+  'simulador-analisar-button'
+]
+
+function isModoReverso() {
+  return simuladorModoAtual === 'reverso'
+}
+
+function getInputPrecoConcorrentePrincipal() {
+  return document.getElementById('precoConcorrente')
+}
+
+function getInputPrecoConcorrenteComparativo() {
+  return document.getElementById('precoConcorrenteComparativo')
+}
+
+function sincronizarPrecoConcorrente(valor, origemId = '') {
+  ;[getInputPrecoConcorrentePrincipal(), getInputPrecoConcorrenteComparativo()].forEach((input) => {
+    if (input && input.id !== origemId) {
+      input.value = valor
+    }
+  })
+}
+
+function getMarketplaceSelect() {
+  return document.getElementById('marketplace')
+}
+
+async function carregarMarketplaces() {
+  const select = getMarketplaceSelect()
+
+  if (!select) {
+    return
+  }
+
+  try {
+    const dados = await apiFetch('/marketplaces')
+
+    select.innerHTML = '<option value="">Selecione</option>'
+
+    if (!Array.isArray(dados)) {
+      return
+    }
+
+    dados.forEach((marketplace) => {
+      const option = document.createElement('option')
+      option.value = marketplace.id
+      option.textContent = marketplace.nome
+      select.appendChild(option)
+    })
+  } catch (error) {
+    console.error('Erro ao carregar marketplaces:', error)
+  }
+}
 
 function setSimuladorFeedback(mensagem, tipo = '') {
   const feedback = document.getElementById('simulador-feedback')
   feedback.className = `feedback ${tipo}`.trim()
   feedback.textContent = mensagem
+}
+
+function hasProdutoSelecionado() {
+  return Number.isFinite(Number(simuladorProdutoSelecionadoId)) && Number(simuladorProdutoSelecionadoId) > 0
+}
+
+function bloquearCamposSimulador() {
+  simuladorCamposIds.forEach((id) => {
+    const element = document.getElementById(id)
+
+    if (element) {
+      element.disabled = true
+    }
+  })
+}
+
+function habilitarCamposSimulador() {
+  simuladorCamposIds.forEach((id) => {
+    const element = document.getElementById(id)
+
+    if (element) {
+      element.disabled = false
+    }
+  })
+}
+
+function validarProdutoSelecionado(mensagem = 'Selecione um produto para comecar') {
+  if (hasProdutoSelecionado()) {
+    return true
+  }
+
+  setSimuladorFeedback(mensagem, 'text-danger')
+  return false
 }
 
 function setResultadoFeedback(mensagem, tipo = '') {
@@ -27,13 +145,31 @@ function setResultadoSugestao(mensagem) {
   sugestao.textContent = mensagem
 }
 
+function animateLiberado(element) {
+  if (!element) {
+    return
+  }
+
+  element.classList.remove('liberado')
+  void element.offsetWidth
+  element.classList.add('liberado')
+}
+
+function atualizarStep(step) {
+  document.querySelectorAll('#simulador-steps [data-step]').forEach((item) => {
+    const itemStep = Number(item.dataset.step)
+    item.classList.toggle('is-active', itemStep === step)
+    item.classList.toggle('is-complete', itemStep < step)
+  })
+}
+
 function atualizarEtapasSimulador(etapa) {
   const etapaSimulacao = document.getElementById('simulador-etapa-simulacao')
   const etapaConcorrencia = document.getElementById('simulador-etapa-concorrencia')
   const etapaResultado = document.getElementById('simulador-etapa-resultado')
 
   etapaSimulacao.classList.remove('hidden')
-  etapaConcorrencia.classList.toggle('hidden', etapa !== 'concorrencia' && etapa !== 'resultado')
+  etapaConcorrencia.classList.toggle('hidden', isModoReverso() || (etapa !== 'concorrencia' && etapa !== 'resultado'))
   etapaResultado.classList.toggle('hidden', etapa !== 'resultado')
 }
 
@@ -208,10 +344,15 @@ function obterSugestaoConcorrencia(precoConcorrente, precoMinimo, precoIdeal) {
 }
 
 function limparResultados() {
+  document.getElementById('sim-resultado-preco').textContent = '--'
   document.getElementById('sim-resultado-lucro').textContent = '--'
   document.getElementById('sim-resultado-margem').textContent = '--'
   document.getElementById('sim-resultado-roi').textContent = '--'
-  document.getElementById('sim-resultado-status').textContent = '--'
+  document.getElementById('sim-resultado-minimo').textContent = '--'
+  atualizarStatusResultado('--', '')
+  document.querySelectorAll('.simulador-resultado-card').forEach((card) => {
+    card.classList.remove('positivo', 'negativo', 'erro', 'alerta', 'ok')
+  })
 }
 
 function limparComparativoConcorrencia() {
@@ -224,20 +365,186 @@ function resetarFluxoSimulador() {
   setResultadoFeedback('')
   setAnaliseFeedback('')
   setResultadoSugestao('')
-  document.getElementById('sim-resultado-preco').textContent = '--'
+  atualizarLabelsResultado()
   limparResultados()
   limparComparativoConcorrencia()
   atualizarEtapasSimulador('simulacao')
+  atualizarStep(hasProdutoSelecionado() ? 2 : 1)
+}
+
+function atualizarLabelsResultado() {
+  const labels = isModoReverso()
+    ? {
+        preco: 'Preco analisado',
+        lucro: 'Lucro estimado',
+        margem: 'Margem real',
+        roi: 'Taxas',
+        minimo: 'Preco minimo'
+      }
+    : {
+        preco: 'Preco sugerido',
+        lucro: 'Lucro estimado',
+        margem: 'Margem real',
+        roi: 'ROI',
+        minimo: 'Preco minimo'
+      }
+
+  document.getElementById('sim-resultado-label-preco').textContent = labels.preco
+  document.getElementById('sim-resultado-label-lucro').textContent = labels.lucro
+  document.getElementById('sim-resultado-label-margem').textContent = labels.margem
+  document.getElementById('sim-resultado-label-roi').textContent = labels.roi
+  document.getElementById('sim-resultado-label-minimo').textContent = labels.minimo
+}
+
+function aplicarClasseResultado(classe) {
+  const classes = ['positivo', 'negativo', 'erro', 'alerta', 'ok']
+
+  ;[
+    'sim-resultado-card-preco',
+    'sim-resultado-card-lucro',
+    'sim-resultado-card-margem',
+    'sim-resultado-card-roi',
+    'sim-resultado-card-minimo',
+    'sim-resultado-card-status'
+  ].forEach((id) => {
+    const card = document.getElementById(id)
+    card.classList.remove(...classes)
+
+    if (classe) {
+      card.classList.add(classe)
+    }
+  })
 }
 
 function atualizarResultados(resultado) {
+  atualizarLabelsResultado()
+
+  const modoReverso = resultado.modo === 'reverso'
   const lucro = Number(resultado.lucro_estimado ?? resultado.lucro ?? 0)
   const margem = Number(resultado.margem_real ?? resultado.margem ?? 0)
   const roi = Number(resultado.roi ?? 0)
+  const preco = Number(resultado.preco ?? resultado.preco_sugerido ?? 0)
+  const taxaValor = Number(resultado.taxaValor ?? 0)
+  const precoMinimo = Number(resultado.precoMinimo ?? resultado.preco_minimo ?? 0)
 
+  document.getElementById('sim-resultado-preco').textContent = preco > 0 ? formatarMoeda(preco) : '--'
   document.getElementById('sim-resultado-lucro').textContent = formatarMoeda(lucro)
   document.getElementById('sim-resultado-margem').textContent = formatarPercentual(margem)
-  document.getElementById('sim-resultado-roi').textContent = formatarPercentual(roi)
+  document.getElementById('sim-resultado-roi').textContent = modoReverso ? formatarMoeda(taxaValor) : formatarPercentual(roi)
+  document.getElementById('sim-resultado-minimo').textContent = precoMinimo > 0 ? formatarMoeda(precoMinimo) : '--'
+
+  if (modoReverso) {
+    const classeResultado = lucro <= 0 ? 'erro' : margem < 0.2 ? 'alerta' : 'ok'
+    aplicarClasseResultado(classeResultado)
+    return
+  }
+
+  aplicarClasseResultado(lucro >= 0 ? 'positivo' : 'negativo')
+}
+
+function isAlertaPrecoAtiva() {
+  return Boolean(simuladorFeatureFlags?.alertaPreco)
+}
+
+function getResumoPrecoIdealElement() {
+  const precoAtualElement = document.getElementById('simulador-produto-preco')
+
+  if (!precoAtualElement) {
+    return null
+  }
+
+  let precoIdealElement = document.getElementById('simulador-produto-preco-ideal')
+
+  if (!precoIdealElement) {
+    precoIdealElement = document.createElement('div')
+    precoIdealElement.id = 'simulador-produto-preco-ideal'
+    precoIdealElement.className = 'preco-ideal-label hidden'
+    precoAtualElement.insertAdjacentElement('afterend', precoIdealElement)
+  }
+
+  return precoIdealElement
+}
+
+function atualizarResumoPrecoIdeal(produto) {
+  const precoIdealElement = getResumoPrecoIdealElement()
+
+  if (!precoIdealElement) {
+    return
+  }
+
+  precoIdealElement.textContent = ''
+  precoIdealElement.classList.add('hidden')
+
+  if (!isAlertaPrecoAtiva() || typeof calcularPrecoIdealBase !== 'function' || !produto) {
+    return
+  }
+
+  const taxa = obterTaxasAtuais()
+  const custo = document.getElementById('sim-custo').value || produto.custo
+  const precoAtual = Number(produto.preco_venda || 0)
+
+  if (precoAtual <= 0) {
+    return
+  }
+
+  const resultadoAtual = calcularIndicadoresPorPreco(custo, taxa, precoAtual)
+
+  if (Number(resultadoAtual.lucro_estimado || 0) >= 0) {
+    return
+  }
+
+  const precoIdeal = calcularPrecoIdealBase({
+    custo: normalizarValorMonetarioInput(custo),
+    taxaFixa: normalizarValorMonetarioInput(taxa.taxa_fixa),
+    freteMedio: normalizarValorMonetarioInput(taxa.frete_medio),
+    taxaPercentual: normalizarPercentualInput(taxa.taxa_percentual),
+    impostoPercentual: normalizarPercentualInput(taxa.imposto_percentual),
+    indiceExtraPercentual: normalizarPercentualInput(taxa.indice_extra_percentual)
+  })
+
+  if (!precoIdeal) {
+    return
+  }
+
+  precoIdealElement.textContent = `Preco ideal: ${formatarMoeda(precoIdeal)}`
+  precoIdealElement.classList.remove('hidden')
+}
+
+function atualizarResumoSelecionado(produto) {
+  document.getElementById('simulador-produto-nome').textContent = produto?.nome || '--'
+  document.getElementById('simulador-produto-custo').textContent = formatarMoeda(produto?.custo || 0)
+  document.getElementById('simulador-produto-preco').textContent = formatarMoeda(produto?.preco_venda || 0)
+  atualizarResumoPrecoIdeal(produto)
+}
+
+function obterClasseStatusVisual(status) {
+  const texto = String(status || '').toLowerCase()
+
+  if (texto.includes('prejuizo')) {
+    return 'status-error'
+  }
+
+  if (texto.includes('baixa margem')) {
+    return 'status-warn'
+  }
+
+  if (texto.includes('saudavel')) {
+    return 'status-ok'
+  }
+
+  return ''
+}
+
+function atualizarStatusResultado(status, classe = '') {
+  const statusElement = document.getElementById('sim-resultado-status')
+  const classeMapeada = {
+    erro: 'status-error',
+    alerta: 'status-warn',
+    ok: 'status-ok'
+  }[classe] || classe
+
+  statusElement.textContent = status
+  statusElement.className = ['simulador-status-chip', classeMapeada].filter(Boolean).join(' ')
 }
 
 function atualizarPrecoSugerido(valor) {
@@ -254,13 +561,100 @@ function obterTaxasAtuais() {
   }
 }
 
+function obterClasseResultadoReverso(lucro, margem) {
+  if (Number(lucro) <= 0) {
+    return 'erro'
+  }
+
+  if (Number(margem) < 0.2) {
+    return 'alerta'
+  }
+
+  return 'ok'
+}
+
+function obterStatusReverso(lucro, margem) {
+  const classe = obterClasseResultadoReverso(lucro, margem)
+
+  if (classe === 'erro') {
+    return {
+      texto: 'Inviavel',
+      classe
+    }
+  }
+
+  if (classe === 'alerta') {
+    return {
+      texto: 'Margem baixa',
+      classe
+    }
+  }
+
+  return {
+    texto: 'Viavel',
+    classe
+  }
+}
+
+function calcularPrecoReverso(produto, precoConcorrente) {
+  const taxa = obterTaxasAtuais()
+  const custo = document.getElementById('sim-custo').value || produto?.custo || 0
+  const preco = normalizarValorMonetarioInput(precoConcorrente)
+  const custoBase = normalizarValorMonetarioInput(custo)
+  const taxaPercentual = normalizarPercentualInput(taxa.taxa_percentual)
+  const taxaFixa = normalizarValorMonetarioInput(taxa.taxa_fixa)
+  const freteMedio = normalizarValorMonetarioInput(taxa.frete_medio)
+  const indiceExtra = normalizarPercentualInput(taxa.indice_extra_percentual)
+  const imposto = normalizarPercentualInput(taxa.imposto_percentual)
+
+  if (preco <= 0) {
+    return {
+      erro: 'Informe um preco valido para analisar.'
+    }
+  }
+
+  const taxaValorPercentual = preco * taxaPercentual
+  const valorIndiceExtra = preco * indiceExtra
+  const valorImposto = preco * imposto
+  const taxaValor = taxaValorPercentual + taxaFixa + freteMedio + valorIndiceExtra + valorImposto
+  const lucro = preco - custoBase - taxaValor
+  const margem = preco > 0 ? lucro / preco : 0
+  const precoMinimo = calcularPrecoMinimo(custoBase, taxa)
+
+  if (precoMinimo.erro) {
+    return precoMinimo
+  }
+
+  return {
+    modo: 'reverso',
+    preco: Number(preco.toFixed(2)),
+    lucro: Number(lucro.toFixed(2)),
+    margem: Number(margem.toFixed(4)),
+    taxaValor: Number(taxaValor.toFixed(2)),
+    precoMinimo: Number(precoMinimo.preco_minimo.toFixed(2)),
+    roi: custoBase > 0 ? Number((lucro / custoBase).toFixed(4)) : 0,
+    erro: ''
+  }
+}
+
 function atualizarPainelConcorrencia() {
+  if (!validarProdutoSelecionado()) {
+    limparComparativoConcorrencia()
+    return {
+      minimo: { erro: 'Selecione um produto para comecar' },
+      ideal: { erro: 'Selecione um produto para comecar' }
+    }
+  }
+
+  const produto = getProdutoSelecionado()
   const taxa = obterTaxasAtuais()
   const custo = document.getElementById('sim-custo').value
   const margem = document.getElementById('sim-margem').value
-  const precoConcorrenteRaw = document.getElementById('precoConcorrente').value
+  const precoConcorrenteRaw = getInputPrecoConcorrenteComparativo()?.value || ''
   const minimo = calcularPrecoMinimo(custo, taxa)
   const ideal = calcularPrecoSimulado(custo, margem, taxa)
+
+  atualizarResumoPrecoIdeal(produto)
 
   if (minimo.erro || ideal.erro) {
     limparComparativoConcorrencia()
@@ -308,11 +702,58 @@ window.selecionarProdutoSimulador = function selecionarProdutoSimulador(produtoI
   document.querySelectorAll('[data-sim-produto-id]').forEach((row) => {
     row.classList.toggle('row-selected', Number(row.dataset.simProdutoId) === simuladorProdutoSelecionadoId)
   })
+  habilitarCamposSimulador()
   renderResumoProduto()
+  animateLiberado(document.getElementById('simulador-conteudo'))
+  animateLiberado(document.getElementById('simulador-cenario-card'))
+  atualizarStep(2)
+  setSimuladorFeedback(
+    isModoReverso() ? 'Informe o preco do concorrente para analisar a viabilidade.' : 'Ajuste os campos para calcular a simulacao.',
+    'text-success'
+  )
+}
+
+function atualizarModoSimulador(modo) {
+  simuladorModoAtual = modo === 'reverso' ? 'reverso' : 'ideal'
+
+  const botaoIdeal = document.getElementById('simulador-modo-ideal')
+  const botaoReverso = document.getElementById('simulador-modo-reverso')
+  const campoMargem = document.getElementById('simulador-field-margem')
+  const campoPrecoConcorrente = document.getElementById('simulador-field-preco-concorrente')
+  const botaoPrincipal = document.getElementById('simulador-calcular-button')
+
+  if (botaoIdeal) {
+    botaoIdeal.className = simuladorModoAtual === 'ideal' ? 'button-primary' : 'button-secondary'
+    botaoIdeal.setAttribute('aria-pressed', String(simuladorModoAtual === 'ideal'))
+  }
+
+  if (botaoReverso) {
+    botaoReverso.className = simuladorModoAtual === 'reverso' ? 'button-primary' : 'button-secondary'
+    botaoReverso.setAttribute('aria-pressed', String(simuladorModoAtual === 'reverso'))
+  }
+
+  campoMargem?.classList.toggle('hidden', isModoReverso())
+  campoPrecoConcorrente?.classList.toggle('hidden', !isModoReverso())
+
+  if (botaoPrincipal) {
+    botaoPrincipal.textContent = isModoReverso() ? 'Analisar preco' : 'Calcular simulacao'
+  }
+
+  atualizarLabelsResultado()
+  resetarFluxoSimulador()
+
+  if (hasProdutoSelecionado()) {
+    setSimuladorFeedback(
+      isModoReverso()
+        ? 'Informe o preco do concorrente para analisar a viabilidade.'
+        : 'Ajuste os campos para calcular a simulacao.',
+      'text-success'
+    )
+  }
 }
 
 function preencherSelectMarketplaces(produto) {
-  const select = document.getElementById('sim-marketplace')
+  const select = getMarketplaceSelect()
   const marketplaces = Array.isArray(produto?.marketplaces) ? produto.marketplaces : []
 
   if (!marketplaces.length) {
@@ -320,14 +761,23 @@ function preencherSelectMarketplaces(produto) {
     return
   }
 
-  select.innerHTML = marketplaces
-    .map((marketplace) => `<option value="${marketplace.id}">${marketplace.nome}</option>`)
-    .join('')
+  select.innerHTML = '<option value="">Selecione</option>'
+
+  marketplaces.forEach((marketplace) => {
+    const option = document.createElement('option')
+    option.value = marketplace.id
+    option.textContent = marketplace.nome
+    select.appendChild(option)
+  })
+
+  if (marketplaces[0]?.id != null) {
+    select.value = String(marketplaces[0].id)
+  }
 }
 
 function preencherCamposCenario() {
   const produto = getProdutoSelecionado()
-  const marketplaceId = Number(document.getElementById('sim-marketplace').value)
+  const marketplaceId = Number(getMarketplaceSelect()?.value)
   const marketplace = (produto?.marketplaces || []).find((item) => Number(item.id) === marketplaceId)
 
   if (!produto || !marketplace) {
@@ -359,16 +809,22 @@ function renderResumoProduto() {
     conteudo.classList.add('hidden')
     cardCenario.classList.add('hidden')
     tabela.innerHTML = ''
+    atualizarResumoSelecionado(null)
     resetarFluxoSimulador()
+    bloquearCamposSimulador()
+    atualizarStep(1)
+    setSimuladorFeedback('Selecione um produto para comecar')
     return
   }
 
   titulo.textContent = produto.nome
   resumo.textContent = `Custo ${formatarMoeda(produto.custo)} | Preco direto ${formatarMoeda(produto.preco_venda)}`
+  atualizarResumoSelecionado(produto)
   vazio.classList.add('hidden')
   conteudo.classList.remove('hidden')
   cardCenario.classList.remove('hidden')
   atualizarEtapasSimulador('simulacao')
+  atualizarStep(2)
 
   if (!Array.isArray(produto.marketplaces) || !produto.marketplaces.length) {
     tabela.innerHTML = `
@@ -376,9 +832,10 @@ function renderResumoProduto() {
         <td colspan="4"><span class="text-soft">Esse produto ainda nao possui marketplaces vinculados.</span></td>
       </tr>
     `
-    document.getElementById('sim-marketplace').innerHTML = '<option value="">Sem marketplaces</option>'
+    getMarketplaceSelect().innerHTML = '<option value="">Sem marketplaces</option>'
     resetarFluxoSimulador()
     atualizarEtapasSimulador('simulacao')
+    atualizarStep(2)
     return
   }
 
@@ -409,7 +866,11 @@ async function carregarProdutosSimulador() {
       `/produtos?page=${simuladorPaginaAtual}&busca=${encodeURIComponent(simuladorBuscaAtual)}`
     )
 
-    setSimuladorFeedback('')
+    if (hasProdutoSelecionado()) {
+      setSimuladorFeedback('')
+    } else {
+      setSimuladorFeedback('Selecione um produto para comecar')
+    }
     simuladorProdutosCache = Array.isArray(dados.produtos) ? dados.produtos : []
     const tabela = document.getElementById('simulador-produtos-tabela')
 
@@ -445,6 +906,9 @@ async function carregarProdutosSimulador() {
       !simuladorProdutosCache.some((produto) => Number(produto.id) === Number(simuladorProdutoSelecionadoId))
     ) {
       simuladorProdutoSelecionadoId = null
+      bloquearCamposSimulador()
+      atualizarStep(1)
+      setSimuladorFeedback('Selecione um produto para comecar')
     }
 
     criarPaginacao(dados.totalPages || 1)
@@ -455,11 +919,17 @@ async function carregarProdutosSimulador() {
 }
 
 function calcularCenario() {
-  const marketplaceId = Number(document.getElementById('sim-marketplace').value)
+  if (!validarProdutoSelecionado()) {
+    return
+  }
+
+  const marketplaceId = Number(getMarketplaceSelect()?.value)
   const produto = getProdutoSelecionado()
   const marketplace = (produto?.marketplaces || []).find((item) => Number(item.id) === marketplaceId)
 
   if (!produto || !marketplace) {
+    setSimuladorFeedback('Selecione um produto valido para calcular a simulacao', 'text-danger')
+    setResultadoFeedback('Selecione um produto e marketplace para continuar.', 'text-danger')
     return
   }
 
@@ -476,29 +946,55 @@ function calcularCenario() {
   if (resultado.erro) {
     document.getElementById('sim-resultado-preco').textContent = '--'
     setResultadoFeedback(resultado.erro, 'text-danger')
+    setSimuladorFeedback(resultado.erro, 'text-danger')
     return
   }
 
-  atualizarPrecoSugerido(resultado.preco_sugerido)
+  const minimo = calcularPrecoMinimo(document.getElementById('sim-custo').value, taxa)
+
+  if (minimo.erro) {
+    setResultadoFeedback(minimo.erro, 'text-danger')
+    setSimuladorFeedback(minimo.erro, 'text-danger')
+    return
+  }
+
   atualizarPainelConcorrencia()
+  atualizarResultados({
+    ...resultado,
+    preco: resultado.preco_sugerido,
+    precoMinimo: minimo.preco_minimo
+  })
+  const status = obterStatusResultado(resultado.lucro_estimado, resultado.margem_real)
+  atualizarStatusResultado(status, obterClasseStatusVisual(status))
+  setResultadoSugestao(obterSugestaoResultado(resultado.lucro_estimado, resultado.margem_real))
   setResultadoFeedback('Simulacao calculada sem alterar os dados reais do produto.', 'text-success')
-  atualizarEtapasSimulador('concorrencia')
+  setSimuladorFeedback('Revise o preco ideal e compare com a concorrencia, se desejar.', 'text-success')
+  atualizarEtapasSimulador('resultado')
+  atualizarStep(3)
+  animateLiberado(document.getElementById('simulador-etapa-resultado'))
 }
 
 function analisarPrecoInformado() {
-  const marketplaceId = Number(document.getElementById('sim-marketplace').value)
+  if (!validarProdutoSelecionado()) {
+    setAnaliseFeedback('Selecione um produto antes de analisar o preco.', 'text-danger')
+    return
+  }
+
+  const marketplaceId = Number(getMarketplaceSelect()?.value)
   const produto = getProdutoSelecionado()
   const marketplace = (produto?.marketplaces || []).find((item) => Number(item.id) === marketplaceId)
 
   if (!produto || !marketplace) {
+    setSimuladorFeedback('Selecione um produto valido para analisar o preco', 'text-danger')
     setAnaliseFeedback('Selecione um produto e marketplace para analisar o preco.', 'text-danger')
     return
   }
 
-  const preco = parseFloat(document.getElementById('precoConcorrente').value)
+  const preco = parseFloat(getInputPrecoConcorrenteComparativo()?.value)
 
   if (!preco || preco <= 0) {
-    window.alert('Informe um preco valido')
+    setSimuladorFeedback('Informe o preco do concorrente para continuar', 'text-danger')
+    setAnaliseFeedback('Informe um preco valido.', 'text-danger')
     return
   }
 
@@ -509,69 +1005,148 @@ function analisarPrecoInformado() {
     return
   }
 
-  const custo = Number(document.getElementById('sim-custo').value || 0)
-  const taxaPercentual = normalizarPercentualInput(document.getElementById('sim-taxa-percentual').value)
-  const taxaFixa = Number(document.getElementById('sim-taxa-fixa').value || 0)
-  const impostoPercentual = normalizarPercentualInput(document.getElementById('sim-imposto').value)
-  const adsPercentual = normalizarPercentualInput(document.getElementById('sim-indice-extra').value)
-  const resultado = analisarPreco(
-    preco,
-    custo,
-    taxaPercentual,
-    taxaFixa,
-    impostoPercentual,
-    adsPercentual
-  )
+  const resultado = calcularPrecoReverso(produto, preco)
+
+  if (resultado.erro) {
+    setAnaliseFeedback(resultado.erro, 'text-danger')
+    return
+  }
 
   atualizarResultados(resultado)
-  document.getElementById('sim-resultado-status').textContent = obterStatusConcorrencia(
-    preco,
-    comparativo.minimo.preco_minimo,
-    comparativo.ideal.preco_sugerido
-  )
+  const status = obterStatusReverso(resultado.lucro, resultado.margem)
+  atualizarStatusResultado(status.texto, status.classe)
   setResultadoSugestao(
     obterSugestaoConcorrencia(preco, comparativo.minimo.preco_minimo, comparativo.ideal.preco_sugerido)
   )
   setAnaliseFeedback('Preco analisado sem alterar o preco sugerido.', 'text-success')
+  setSimuladorFeedback('Analise se o preco e lucrativo', 'text-success')
   atualizarEtapasSimulador('resultado')
+  atualizarStep(3)
+  animateLiberado(document.getElementById('simulador-etapa-resultado'))
 }
 
-document.getElementById('simulador-busca-produto').addEventListener('input', function () {
-  const valor = this.value.trim()
-
-  if (simuladorBuscaTimer) {
-    clearTimeout(simuladorBuscaTimer)
+function analisarPrecoPrincipal() {
+  if (!validarProdutoSelecionado()) {
+    return
   }
 
-  simuladorBuscaTimer = window.setTimeout(() => {
-    simuladorBuscaAtual = valor
-    simuladorPaginaAtual = 1
-    carregarProdutosSimulador()
-  }, 250)
-})
+  const marketplaceId = Number(getMarketplaceSelect()?.value)
+  const produto = getProdutoSelecionado()
+  const marketplace = (produto?.marketplaces || []).find((item) => Number(item.id) === marketplaceId)
+  const precoConcorrente = parseFloat(getInputPrecoConcorrentePrincipal()?.value)
 
-document.getElementById('simulador-atualizar-button').addEventListener('click', carregarProdutosSimulador)
-document.getElementById('sim-marketplace').addEventListener('change', () => {
-  preencherCamposCenario()
-  resetarFluxoSimulador()
-  atualizarPainelConcorrencia()
-})
-document.getElementById('simulador-calcular-button').addEventListener('click', calcularCenario)
-document.getElementById('simulador-analisar-button').addEventListener('click', analisarPrecoInformado)
+  if (!produto || !marketplace) {
+    setSimuladorFeedback('Selecione um produto e marketplace para continuar.', 'text-danger')
+    setResultadoFeedback('Selecione um produto e marketplace para analisar o preco.', 'text-danger')
+    return
+  }
 
-;[
-  'sim-custo',
-  'sim-margem',
-  'sim-taxa-percentual',
-  'sim-taxa-fixa',
-  'sim-frete-medio',
-  'sim-indice-extra',
-  'sim-imposto',
-  'precoConcorrente'
-].forEach((id) => {
-  document.getElementById(id).addEventListener('input', () => {
+  if (!precoConcorrente || precoConcorrente <= 0) {
+    setSimuladorFeedback('Informe o preco do concorrente para continuar.', 'text-danger')
+    setResultadoFeedback('Digite um preco do concorrente valido para analisar.', 'text-danger')
+    return
+  }
+
+  const resultado = calcularPrecoReverso(produto, precoConcorrente)
+
+  if (resultado.erro) {
+    setSimuladorFeedback(resultado.erro, 'text-danger')
+    setResultadoFeedback(resultado.erro, 'text-danger')
+    return
+  }
+
+  atualizarResultados(resultado)
+  const status = obterStatusReverso(resultado.lucro, resultado.margem)
+  atualizarStatusResultado(status.texto, status.classe)
+  setResultadoSugestao(
+    resultado.lucro <= 0
+      ? 'Esse preco nao cobre os custos atuais da operacao.'
+      : resultado.margem < 0.2
+        ? 'O preco e viavel, mas a margem esta comprimida.'
+        : 'O preco analisado sustenta uma margem saudavel.'
+  )
+  setResultadoFeedback('Preco analisado sem alterar os dados reais do produto.', 'text-success')
+  setSimuladorFeedback('Analise concluida com base no preco informado.', 'text-success')
+  atualizarEtapasSimulador('resultado')
+  atualizarStep(3)
+  animateLiberado(document.getElementById('simulador-etapa-resultado'))
+}
+
+function executarAcaoPrincipal() {
+  if (isModoReverso()) {
+    analisarPrecoPrincipal()
+    return
+  }
+
+  calcularCenario()
+}
+
+function inicializarSimuladorPreco() {
+  document.getElementById('simulador-busca-produto').addEventListener('input', function () {
+    const valor = this.value.trim()
+
+    if (simuladorBuscaTimer) {
+      clearTimeout(simuladorBuscaTimer)
+    }
+
+    simuladorBuscaTimer = window.setTimeout(() => {
+      simuladorBuscaAtual = valor
+      simuladorPaginaAtual = 1
+      carregarProdutosSimulador()
+    }, 250)
+  })
+
+  document.getElementById('simulador-atualizar-button').addEventListener('click', carregarProdutosSimulador)
+  document.getElementById('simulador-modo-ideal').addEventListener('click', () => {
+    atualizarModoSimulador('ideal')
+  })
+  document.getElementById('simulador-modo-reverso').addEventListener('click', () => {
+    atualizarModoSimulador('reverso')
+  })
+  getMarketplaceSelect().addEventListener('change', () => {
+    if (!validarProdutoSelecionado()) {
+      return
+    }
+
+    preencherCamposCenario()
+    resetarFluxoSimulador()
     atualizarPainelConcorrencia()
   })
-})
+  document.getElementById('simulador-calcular-button').addEventListener('click', executarAcaoPrincipal)
+  document.getElementById('simulador-analisar-button').addEventListener('click', analisarPrecoInformado)
 
-carregarProdutosSimulador()
+  ;[
+    'sim-custo',
+    'sim-margem',
+    'sim-taxa-percentual',
+    'sim-taxa-fixa',
+    'sim-frete-medio',
+    'sim-indice-extra',
+    'sim-imposto',
+    'precoConcorrente',
+    'precoConcorrenteComparativo'
+  ].forEach((id) => {
+    document.getElementById(id).addEventListener('input', () => {
+      if (id === 'precoConcorrente' || id === 'precoConcorrenteComparativo') {
+        sincronizarPrecoConcorrente(document.getElementById(id).value, id)
+      }
+
+      if (!hasProdutoSelecionado()) {
+        return
+      }
+
+      atualizarPainelConcorrencia()
+    })
+  })
+
+  bloquearCamposSimulador()
+  atualizarModoSimulador('ideal')
+  atualizarStep(1)
+  setSimuladorFeedback('Selecione um produto para comecar')
+  void carregarMarketplaces()
+  void carregarProdutosSimulador()
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  inicializarSimuladorPreco()
+})

@@ -1,3 +1,28 @@
+let dashboardFeatureFlags = window.featureFlags || {}
+let calcularPrecoIdealBase = window.precoIdealUtils?.calcularPrecoIdealBase || null
+
+void import('./featureFlags.js')
+  .then(({ featureFlags }) => {
+    dashboardFeatureFlags = window.featureFlags || featureFlags
+    window.featureFlags = dashboardFeatureFlags
+
+    if (financeMetricasMap.size) {
+      renderTabela([...financeMetricasMap.values()])
+    }
+  })
+  .catch(() => {})
+
+void import('./preco-ideal.js')
+  .then((modulo) => {
+    calcularPrecoIdealBase = modulo.calcularPrecoIdealBase
+    window.precoIdealUtils = window.precoIdealUtils || modulo
+
+    if (financeMetricasMap.size) {
+      renderTabela([...financeMetricasMap.values()])
+    }
+  })
+  .catch(() => {})
+
 const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
 
 if (!localStorage.getItem('token')) {
@@ -9,7 +34,107 @@ const financeFeedback = document.getElementById('finance-feedback')
 const financeTopBody = document.getElementById('finance-top-body')
 const financeAlert = document.getElementById('alerta-dashboard')
 const financeAlertList = document.getElementById('finance-alert-list')
+const metricItensPrejuizoCard = document.getElementById('metric-itens-prejuizo-card')
 let financeMetricasMap = new Map()
+
+function inicializarGraficoDashboard() {
+  const ctx = document.getElementById('graficoDashboard')
+
+  if (!ctx) {
+    return
+  }
+
+  if (typeof window.Chart !== 'function') {
+    return
+  }
+
+  if (window.graficoDashboardInstance) {
+    window.graficoDashboardInstance.destroy()
+  }
+
+  window.graficoDashboardInstance = new window.Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
+      datasets: [{
+        label: 'Lucro',
+        data: [120, 190, 150, 220, 300, 250, 320],
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false
+    }
+  })
+}
+
+function isAlertaPrecoAtiva() {
+  return Boolean(dashboardFeatureFlags?.alertaPreco)
+}
+
+function isProdutoComPrejuizo(item) {
+  return Number(item?.lucro || 0) <= 0
+}
+
+function setMetricCardStatus(element, status) {
+  if (!element) {
+    return
+  }
+
+  element.classList.remove('finance-side-item-neutro', 'finance-side-item-alerta', 'finance-side-item-erro', 'finance-side-item-ok')
+  element.classList.add(`finance-side-item-${status}`)
+}
+
+function getClassesLinhaProduto(item) {
+  const classes = []
+
+  if (item.abaixoMinimo || item.status === 'erro') {
+    classes.push('marketplace-loss-row')
+  }
+
+  if (isAlertaPrecoAtiva() && isProdutoComPrejuizo(item)) {
+    classes.push('prejuizo')
+  }
+
+  return classes.join(' ')
+}
+
+function getIndicacaoPrejuizo(item) {
+  if (!isAlertaPrecoAtiva() || !isProdutoComPrejuizo(item)) {
+    return ''
+  }
+
+  return '<div class="prejuizo-label">Prejuizo</div>'
+}
+
+function calcularPrecoIdealSugestao(item) {
+  if (!isAlertaPrecoAtiva() || !isProdutoComPrejuizo(item) || typeof calcularPrecoIdealBase !== 'function') {
+    return null
+  }
+
+  return calcularPrecoIdealBase({
+    custo: Number(item?.custo || 0),
+    taxaFixa: Number(item?.taxa_fixa || 0),
+    freteMedio: Number(item?.frete_medio || 0),
+    taxaPercentual: normalizarPercent(item?.taxa_percentual),
+    impostoPercentual: normalizarPercent(item?.imposto_percentual),
+    indiceExtraPercentual: normalizarPercent(item?.indice_extra_percentual)
+  })
+}
+
+function getSugestaoPrecoIdeal(item) {
+  const precoIdeal = calcularPrecoIdealSugestao(item)
+
+  if (!precoIdeal) {
+    return ''
+  }
+
+  return `<div class="preco-ideal-label">Preco ideal: ${formatCurrency(precoIdeal)}</div>`
+}
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', {
@@ -20,6 +145,11 @@ function formatCurrency(value) {
 
 function formatPercent(value) {
   return `${(Number(value || 0) * 100).toFixed(2)}%`
+}
+
+function normalizarPercent(value) {
+  const normalizar = window.dashboardMetricas?.normalizarPercent
+  return typeof normalizar === 'function' ? normalizar(value) : Number(value || 0)
 }
 
 function setText(id, value) {
@@ -71,80 +201,27 @@ function renderAlertList(alertas) {
   `).join('')
 }
 
-function normalizarPercent(value) {
-  const numero = Number(value || 0)
-  return numero > 1 ? numero / 100 : numero
-}
-
-function calcularPrecoMinimoDashboard(item) {
-  const custo = Number(item.custo || 0)
-  const taxaFixa = Number(item.taxa_fixa || 0)
-  const frete = Number(item.frete_medio || 0)
-  const taxaPercentual = normalizarPercent(item.taxa_percentual)
-  const imposto = normalizarPercent(item.imposto_percentual)
-  const indicesExtras = normalizarPercent(item.indice_extra_percentual)
-  const divisor = 1 - (taxaPercentual + imposto + indicesExtras)
-
-  if (divisor <= 0) {
-    return 0
-  }
-
-  return (custo + taxaFixa + frete) / divisor
-}
-
 function calcularMetricas(produtos) {
-  return produtos.map((produto) => {
-    const marketplacePrimario = Array.isArray(produto.marketplaces) && produto.marketplaces.length
-      ? produto.marketplaces[0]
-      : {}
-    const receita = Number(produto.preco_venda || marketplacePrimario.preco_calculado || produto.preco || 0)
-    const custo = Number(produto.custo || 0)
-    const tarifa = Number(produto.tarifa || marketplacePrimario.taxa_fixa || 0) + (receita * normalizarPercent(marketplacePrimario.taxa_percentual))
-    const imposto = Number(produto.imposto || 0) || (receita * normalizarPercent(marketplacePrimario.imposto_percentual))
-    const ads = Number(produto.ads || 0) || (receita * normalizarPercent(marketplacePrimario.indice_extra_percentual))
-    const lucro = receita - custo - tarifa - imposto - ads
-    const margem = receita > 0 ? lucro / receita : 0
-    const roi = custo > 0 ? lucro / custo : 0
-    const precoMinimo = calcularPrecoMinimoDashboard({
-      custo,
-      taxa_fixa: marketplacePrimario.taxa_fixa,
-      frete_medio: marketplacePrimario.frete_medio,
-      taxa_percentual: marketplacePrimario.taxa_percentual,
-      imposto_percentual: marketplacePrimario.imposto_percentual,
-      indice_extra_percentual: marketplacePrimario.indice_extra_percentual
-    })
-
-    return {
-      id: produto.id,
-      nome: produto.nome,
-      receita,
-      custo,
-      tarifa,
-      imposto,
-      ads,
-      lucro,
-      margem,
-      roi,
-      precoMinimo,
-      marketplaceNome: marketplacePrimario.nome || produto.marketplace || 'Sem canal',
-      taxa_percentual: marketplacePrimario.taxa_percentual || 0,
-      taxa_fixa: marketplacePrimario.taxa_fixa || 0,
-      frete_medio: marketplacePrimario.frete_medio || 0,
-      imposto_percentual: marketplacePrimario.imposto_percentual || 0,
-      indice_extra_percentual: marketplacePrimario.indice_extra_percentual || 0
-    }
-  })
+  const calcularMetricasProduto = window.dashboardMetricas?.calcularMetricasProduto
+  return typeof calcularMetricasProduto === 'function'
+    ? produtos.map((produto) => calcularMetricasProduto(produto))
+    : []
 }
 
 function obterStatusProduto(item) {
-  if (Number(item.receita) < Number(item.precoMinimo || 0) || Number(item.lucro) < 0) {
+  const classificarStatus = window.dashboardMetricas?.classificarStatus
+  const statusBase = typeof classificarStatus === 'function'
+    ? classificarStatus(item.lucro, item.margem)
+    : 'ok'
+
+  if (item.abaixoMinimo || statusBase === 'erro') {
     return {
       label: '\u{1F534} Critico',
       className: 'status-error'
     }
   }
 
-  if (Number(item.margem) < 0.1) {
+  if (statusBase === 'alerta') {
     return {
       label: '\u{1F7E1} Atencao',
       className: 'status-warn'
@@ -162,15 +239,15 @@ function obterSugestaoProduto(item) {
   const tarifa = Number(item.tarifa || 0)
   const relacaoTarifa = receita > 0 ? tarifa / receita : 0
 
-  if (Number(item.lucro) < 0) {
+  if (Number(item.lucro) <= 0) {
     return 'Aumentar preco urgente'
   }
 
-  if (receita < Number(item.precoMinimo || 0)) {
+  if (item.abaixoMinimo) {
     return 'Rever preco minimo e canal'
   }
 
-  if (Number(item.margem) < 0.1) {
+  if (Number(item.margem) > 0 && Number(item.margem) < 0.2) {
     return 'Aumentar preco ou reduzir custo'
   }
 
@@ -275,16 +352,16 @@ function renderTabela(metricas) {
     .slice(0, 10)
 
   financeTopBody.innerHTML = topProdutos.map((item) => `
-    <tr class="${item.receita < item.precoMinimo || item.lucro < 0 ? 'marketplace-loss-row' : ''}">
+    <tr class="${getClassesLinhaProduto(item)}">
       <td>${item.nome}</td>
-      <td>${formatCurrency(item.receita)}</td>
+      <td>${formatCurrency(item.receita)}${getSugestaoPrecoIdeal(item)}</td>
       <td>${formatCurrency(item.custo)}</td>
       <td>${formatCurrency(item.lucro)}</td>
       <td>${formatPercent(item.margem)}</td>
       <td>${formatPercent(item.roi)}</td>
       <td>${formatCurrency(item.precoMinimo)}</td>
       <td><span class="status-badge ${obterStatusProduto(item).className}">${obterStatusProduto(item).label}</span></td>
-      <td>${obterSugestaoProduto(item)}</td>
+      <td>${obterSugestaoProduto(item)}${getIndicacaoPrejuizo(item)}</td>
       <td>
         <div class="finance-table-actions">
           <button type="button" class="button-secondary finance-action-button" data-action="simular" data-id="${item.id}">Simular</button>
@@ -296,9 +373,12 @@ function renderTabela(metricas) {
 }
 
 function atualizarResumo(metricas) {
-  const produtosPrejuizo = metricas.filter((item) => item.lucro < 0)
-  const produtosAbaixoMinimo = metricas.filter((item) => item.receita < item.precoMinimo && item.precoMinimo > 0)
-  const produtosMargemBaixa = metricas.filter((item) => item.margem >= 0 && item.margem < 0.1)
+  const resumirMetricas = window.dashboardMetricas?.resumirMetricas
+  const classificarQuantidade = window.dashboardMetricas?.classificarQuantidade
+  const resumo = typeof resumirMetricas === 'function' ? resumirMetricas(metricas) : null
+  const produtosPrejuizo = resumo ? resumo.produtosPrejuizo : []
+  const produtosAbaixoMinimo = resumo ? resumo.produtosAbaixoMinimo : []
+  const produtosMargemBaixa = resumo ? resumo.produtosMargemBaixa : []
   const oportunidades = metricas.filter((item) => item.receita > 0 && item.precoMinimo > 0 && item.receita >= item.precoMinimo * 1.4)
   const marketplaceCritico = produtosPrejuizo.reduce((acc, item) => {
     const chave = item.marketplaceNome || 'Sem canal'
@@ -309,20 +389,7 @@ function atualizarResumo(metricas) {
     return acc
   }, new Map())
 
-  const totais = metricas.reduce((acc, item) => {
-    acc.receita += item.receita
-    acc.custo += item.custo
-    acc.tarifa += item.tarifa
-    acc.imposto += item.imposto
-    acc.ads += item.ads
-    acc.lucro += item.lucro
-    acc.lucrativos += item.lucro > 0 ? 1 : 0
-    acc.prejuizo += item.lucro < 0 ? 1 : 0
-    acc.maiorLucro = Math.max(acc.maiorLucro, item.lucro)
-    acc.melhorRoi = Math.max(acc.melhorRoi, item.roi)
-    acc.piorMargem = Math.min(acc.piorMargem, item.margem)
-    return acc
-  }, {
+  const totais = resumo ? resumo.totais : {
     receita: 0,
     custo: 0,
     tarifa: 0,
@@ -332,24 +399,20 @@ function atualizarResumo(metricas) {
     lucrativos: 0,
     prejuizo: 0,
     maiorLucro: 0,
-    melhorRoi: 0,
-    piorMargem: metricas.length ? Number.POSITIVE_INFINITY : 0
-  })
-
-  const despesasVariaveis = totais.tarifa + totais.imposto + totais.ads
-  const margemMedia = totais.receita > 0 ? totais.lucro / totais.receita : 0
-  const roiMedio = totais.custo > 0 ? totais.lucro / totais.custo : 0
-  const piorMargem = Number.isFinite(totais.piorMargem) ? totais.piorMargem : 0
-  const produtosRiscoIds = new Set([
-    ...produtosPrejuizo.map((item) => item.id),
-    ...produtosAbaixoMinimo.map((item) => item.id),
-    ...produtosMargemBaixa.map((item) => item.id)
-  ])
+    melhorRoi: 0
+  }
+  const despesasVariaveis = totais ? totais.tarifa + totais.imposto + totais.ads : 0
+  const margemMedia = resumo ? resumo.margemMedia : 0
+  const roiMedio = resumo ? resumo.roiMedio : 0
+  const piorMargem = resumo ? resumo.piorMargem : 0
+  const produtosRiscoIds = resumo ? resumo.produtosRiscoIds : new Set()
   const canalCritico = [...marketplaceCritico.entries()]
     .sort((a, b) => b[1].quantidade - a[1].quantidade || b[1].perda - a[1].perda)[0]
   const alertas = []
 
-  if (margemMedia < 0) {
+  if (metricas.length === 0) {
+    setAlert('Nenhum produto analisado no momento.', 'neutral')
+  } else if (margemMedia <= 0) {
     setAlert('\u{1F534} Prejuizo geral', 'danger')
   } else if (margemMedia < 0.2) {
     setAlert('\u{1F7E1} Margem geral baixa', 'warning')
@@ -412,6 +475,12 @@ function atualizarResumo(metricas) {
   setText('metric-pior-margem', formatPercent(piorMargem))
   setText('metric-melhor-roi', formatPercent(totais.melhorRoi))
   setText('metric-produtos-risco', String(produtosRiscoIds.size))
+  setMetricCardStatus(
+    metricItensPrejuizoCard,
+    typeof classificarQuantidade === 'function'
+      ? classificarQuantidade(produtosPrejuizo.length, 'erro')
+      : (produtosPrejuizo.length === 0 ? 'neutro' : 'erro')
+  )
 }
 
 async function carregarDashboardFinanceiro() {
@@ -467,4 +536,7 @@ document.getElementById('finance-refresh-button')?.addEventListener('click', asy
   await carregarDashboardFinanceiro()
 })
 
-carregarDashboardFinanceiro()
+document.addEventListener('DOMContentLoaded', () => {
+  inicializarGraficoDashboard()
+  carregarDashboardFinanceiro()
+})

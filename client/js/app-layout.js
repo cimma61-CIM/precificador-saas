@@ -23,13 +23,23 @@
       label: 'Dashboard'
     },
     {
-      type: 'group',
-      label: 'Produtos',
+      type: 'link',
+      id: 'dashboard-financeiro',
+      href: '/dashboard-financeiro.html',
+      label: 'Financeiro'
+    },
+    {
+      type: 'submenu',
+      id: 'cadastros',
+      label: 'Cadastros',
       children: [
-        { id: 'produto-novo', href: '/produtos-novo.html', label: 'Novo produto' },
-        { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos cadastrados' },
+        { id: 'clientes-fornecedores', href: '#', label: 'Clientes e Fornecedores', disabled: true },
+        { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos' },
+        { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true },
         { id: 'categorias', href: '/categorias.html', label: 'Categorias' },
-        { id: 'importar-produtos', href: '/importar-produtos.html', label: 'Importar produtos' }
+        { id: 'vendedores', href: '#', label: 'Vendedores', disabled: true },
+        { id: 'embalagens', href: '#', label: 'Embalagens', disabled: true },
+        { id: 'relatorios', href: '#', label: 'Relatorios', disabled: true }
       ]
     },
     {
@@ -68,14 +78,58 @@
   ]
 
   function renderLink(link, className = 'menu-link') {
-    const classes = `${className} ${link.id === pagina ? 'active' : ''}`.trim()
+    const classes = [
+      className,
+      link.id === pagina ? 'active' : '',
+      link.disabled ? 'is-disabled' : ''
+    ]
+      .filter(Boolean)
+      .join(' ')
 
     return `
-      <a class="${classes}" href="${link.href}">
+      <a class="${classes}" href="${link.disabled ? '#' : link.href}" ${link.disabled ? 'aria-disabled="true"' : ''}>
         ${link.label}
       </a>
     `
   }
+
+  function renderSubmenuToggle(item) {
+    const isActive = item.children.some((child) => child.id === pagina)
+
+    return `
+      <button
+        class="menu-link menu-link-toggle ${isActive ? 'active' : ''}"
+        type="button"
+        data-submenu-toggle="${item.id}"
+        aria-expanded="${isActive ? 'true' : 'false'}"
+      >
+        <span>${item.label}</span>
+        <span class="menu-link-toggle-icon" aria-hidden="true">&rsaquo;</span>
+      </button>
+    `
+  }
+
+  function renderSubmenuPanel(item) {
+    const isActive = item.children.some((child) => child.id === pagina)
+
+    return `
+      <aside
+        class="sidebar-submenu ${isActive ? 'is-open' : ''}"
+        data-submenu-panel="${item.id}"
+        aria-hidden="${isActive ? 'false' : 'true'}"
+      >
+        <div class="sidebar-submenu-head">
+          <span class="sidebar-submenu-kicker">Cadastros</span>
+        </div>
+        <nav class="sidebar-submenu-nav">
+          ${item.children.map((child) => renderLink(child, 'sidebar-submenu-link')).join('')}
+        </nav>
+      </aside>
+    `
+  }
+
+  const cadastroSubmenu = navigation.find((item) => item.type === 'submenu' && item.id === 'cadastros')
+  const cadastroActive = Boolean(cadastroSubmenu?.children.some((child) => child.id === pagina))
 
   const sidebar = document.createElement('aside')
   sidebar.className = 'sidebar'
@@ -92,6 +146,10 @@
           .map((item) => {
             if (item.type === 'link') {
               return renderLink(item)
+            }
+
+            if (item.type === 'submenu') {
+              return renderSubmenuToggle(item)
             }
 
             const groupActive = item.children.some((child) => child.id === pagina)
@@ -116,5 +174,61 @@
   `
 
   document.body.insertBefore(sidebar, mainContent)
+  if (cadastroSubmenu) {
+    document.body.insertAdjacentHTML('afterbegin', renderSubmenuPanel(cadastroSubmenu))
+  }
+
   document.getElementById('sidebar-logout-button')?.addEventListener('click', logoutUsuario)
+
+  const submenuToggle = document.querySelector('[data-submenu-toggle="cadastros"]')
+  const submenuPanel = document.querySelector('[data-submenu-panel="cadastros"]')
+
+  function setSubmenuState(isOpen) {
+    if (!submenuToggle || !submenuPanel) {
+      return
+    }
+
+    submenuToggle.setAttribute('aria-expanded', String(isOpen))
+    submenuPanel.classList.toggle('is-open', isOpen)
+    submenuPanel.setAttribute('aria-hidden', String(!isOpen))
+  }
+
+  if (cadastroActive) {
+    setSubmenuState(true)
+  }
+
+  submenuToggle?.addEventListener('click', () => {
+    const isOpen = submenuToggle.getAttribute('aria-expanded') === 'true'
+    setSubmenuState(!isOpen)
+  })
+
+  document.addEventListener('click', (event) => {
+    if (!submenuToggle || !submenuPanel) {
+      return
+    }
+
+    const target = event.target
+
+    if (!(target instanceof Node)) {
+      return
+    }
+
+    if (submenuToggle.contains(target) || submenuPanel.contains(target)) {
+      return
+    }
+
+    setSubmenuState(false)
+  })
+
+  document.querySelectorAll('.is-disabled').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault()
+    })
+  })
+
+  document.querySelectorAll('.sidebar-submenu-link:not(.is-disabled)').forEach((link) => {
+    link.addEventListener('click', () => {
+      setSubmenuState(false)
+    })
+  })
 })()

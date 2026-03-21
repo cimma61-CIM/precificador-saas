@@ -1,94 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title>
-<link rel="stylesheet" href="/css/style.css?v=3">
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=/dashboard-financeiro.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resumo | Redirecionando</title>
 </head>
-<body data-app-page="analytics">
-
-<main class="main-content">
-<div class="container">
-  <div class="page-header">
-    <div>
-      <h1>Dashboard</h1>
-      <p>Visão rápida da operação com produtos, marketplaces e margem média.</p>
-    </div>
-  </div>
-
-  <div class="dashboard-grid">
-    <div class="metric-card">
-      <span class="metric-label">Total Products</span>
-      <strong id="total-produtos" class="metric-value">0</strong>
-      <span class="metric-helper">Produtos ativos cadastrados</span>
-    </div>
-
-    <div class="metric-card">
-      <span class="metric-label">Marketplaces configured</span>
-      <strong id="marketplaces-configurados" class="metric-value">0</strong>
-      <span class="metric-helper">Catálogo de canais disponível</span>
-    </div>
-
-    <div class="metric-card">
-      <span class="metric-label">Average margin</span>
-      <strong id="margem-media" class="metric-value">0%</strong>
-      <span class="metric-helper">Margem média estimada do portfólio</span>
-    </div>
-
-    <div class="metric-card success">
-      <span class="metric-label">Last price calculation</span>
-      <strong id="ultimo-calculo" class="metric-value">R$ 0,00</strong>
-      <span id="ultimo-calculo-label" class="metric-helper">Nenhum cálculo registrado</span>
-    </div>
-  </div>
-
-  <div class="card table-card">
-    <div class="section-head">
-      <div>
-        <h2>Produtos com margem negativa</h2>
-        <p class="card-subtitle">Itens que precisam de ajuste de preço ou custo.</p>
-      </div>
-      <button class="button-secondary" onclick="carregarDashboard()">Atualizar</button>
-    </div>
-
-    <div class="dashboard-grid">
-      <div class="metric-card danger">
-        <span class="metric-label">Produtos com margem negativa</span>
-        <strong id="produtos-negativos-total" class="metric-value">0</strong>
-        <span class="metric-helper">Produtos abaixo do ponto ideal</span>
-      </div>
-
-      <div class="metric-card success">
-        <span class="metric-label">Lucro estimado</span>
-        <strong id="lucro-estimado" class="metric-value">R$ 0,00</strong>
-        <span class="metric-helper">Estimativa consolidada com estoque atual</span>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Custo</th>
-            <th>Preço</th>
-            <th>Quantidade</th>
-            <th>Margem</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-negativos"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<script src="/js/theme.js"></script>
-<script src="/js/app-api.js"></script>
-<script src="/js/app-layout.js"></script>
-<script src="/resumo.js"></script>
-
-</main>
+<body>
+  <script>
+    window.location.replace('/dashboard-financeiro.html')
+  </script>
 </body>
 </html>

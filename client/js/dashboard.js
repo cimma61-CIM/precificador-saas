@@ -7,6 +7,7 @@ if (!localStorage.getItem('token')) {
 const dashboardSubtitle = document.getElementById('dashboard-subtitle')
 const feedbackElement = document.getElementById('dashboard-feedback')
 const productsTableBody = document.getElementById('products-table-body')
+const metricNegativeCard = document.getElementById('metric-negative-card')
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', {
@@ -25,6 +26,15 @@ function setMetric(id, value) {
   if (element) {
     element.textContent = value
   }
+}
+
+function setMetricCardStatus(element, status) {
+  if (!element) {
+    return
+  }
+
+  element.classList.remove('side-metric-neutro', 'side-metric-alerta', 'side-metric-erro', 'side-metric-ok')
+  element.classList.add(`side-metric-${status}`)
 }
 
 function setFeedback(message, isError = false) {
@@ -83,6 +93,34 @@ function renderProducts(produtos) {
   setMetric('metric-listed', String(produtos.length))
 }
 
+async function carregarPaginaProdutos(page, limit) {
+  return apiFetch(`/produtos?limit=${limit}&page=${page}`)
+}
+
+async function carregarTodosProdutosDashboard() {
+  const limit = 200
+  const primeiraPagina = await carregarPaginaProdutos(1, limit)
+  const produtos = [...(primeiraPagina.produtos || [])]
+  const totalPages = Number(primeiraPagina.totalPages || 1)
+  const concorrencia = 4
+
+  for (let inicio = 2; inicio <= totalPages; inicio += concorrencia) {
+    const paginas = []
+
+    for (let pagina = inicio; pagina < inicio + concorrencia && pagina <= totalPages; pagina += 1) {
+      paginas.push(carregarPaginaProdutos(pagina, limit))
+    }
+
+    const respostas = await Promise.all(paginas)
+
+    for (const resposta of respostas) {
+      produtos.push(...(resposta.produtos || []))
+    }
+  }
+
+  return produtos
+}
+
 async function carregarDashboard() {
   try {
     setFeedback('Carregando dados...')
@@ -91,19 +129,31 @@ async function carregarDashboard() {
       dashboardSubtitle.textContent = `Bem-vindo, ${usuario.nome}. Acompanhe margem, lucro e canais ativos em um unico painel.`
     }
 
-    const [summary, productsResponse, marketplacesResponse] = await Promise.all([
+    const [summary, productsResponse, marketplacesResponse, produtosCompletos] = await Promise.all([
       apiFetch('/analise/dashboard'),
       apiFetch('/produtos?limit=8&page=1'),
-      apiFetch('/marketplaces')
+      apiFetch('/marketplaces'),
+      carregarTodosProdutosDashboard()
     ])
+    const calcularMetricasProduto = window.dashboardMetricas?.calcularMetricasProduto
+    const resumirMetricas = window.dashboardMetricas?.resumirMetricas
+    const classificarQuantidade = window.dashboardMetricas?.classificarQuantidade
+    const metricas = Array.isArray(produtosCompletos) && typeof calcularMetricasProduto === 'function'
+      ? produtosCompletos.map((produto) => calcularMetricasProduto(produto))
+      : []
+    const resumo = typeof resumirMetricas === 'function' ? resumirMetricas(metricas) : null
+    const quantidadePrejuizo = resumo ? resumo.produtosPrejuizo.length : Number(summary.produtos_margem_negativa || 0)
 
     setMetric('metric-products', String(summary.total_produtos || 0))
     setMetric('metric-marketplaces', String((marketplacesResponse.marketplaces || []).filter((item) => item.ativo !== false).length))
-    setMetric('metric-margin', formatPercent(summary.margem_media || 0))
-    setMetric('metric-profit', formatCurrency(summary.lucro_estimado || 0))
-    setMetric('metric-negative', String(summary.produtos_margem_negativa || 0))
+    setMetric('metric-margin', formatPercent(resumo ? resumo.margemMedia : summary.margem_media || 0))
+    setMetric('metric-profit', formatCurrency(resumo ? resumo.totais.lucro : summary.lucro_estimado || 0))
+    setMetric('metric-negative', String(quantidadePrejuizo))
     setMetric('last-price-value', formatCurrency(summary.ultimo_calculo_valor || 0))
     setMetric('last-price-label', summary.ultimo_calculo_label || 'Nenhum calculo registrado')
+    setMetricCardStatus(metricNegativeCard, typeof classificarQuantidade === 'function'
+      ? classificarQuantidade(quantidadePrejuizo, 'erro')
+      : (Number(quantidadePrejuizo) === 0 ? 'neutro' : 'erro'))
 
     renderProducts(productsResponse.produtos || [])
     setFeedback('Dados atualizados.')

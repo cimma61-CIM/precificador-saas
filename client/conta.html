@@ -1,74 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conta</title>
-<link rel="stylesheet" href="/css/style.css?v=3">
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=/minha-conta.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conta | Redirecionando</title>
 </head>
-<body data-app-page="conta">
-
-<main class="main-content">
-  <div class="container">
-    <div class="page-stack">
-      <div class="page-header">
-        <div>
-          <h1>Conta</h1>
-          <p>Gerencie os dados principais da sua conta, seguranca e informacoes do plano.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Perfil</h2>
-        <p class="card-subtitle">Informacoes basicas do usuario autenticado.</p>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="conta-nome">Nome</label>
-            <input id="conta-nome" readonly>
-          </div>
-          <div class="field">
-            <label for="conta-email">Email</label>
-            <input id="conta-email" readonly>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Seguranca</h2>
-        <p class="card-subtitle">A alteracao de senha continua sendo feita pelo fluxo seguro de recuperacao.</p>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="conta-seguranca-info">Status</label>
-            <input id="conta-seguranca-info" value="Senha protegida por autenticacao JWT" readonly>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <a class="button-primary" href="/esqueci-senha.html">Alterar senha</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Plano</h2>
-        <p class="card-subtitle">Visao atual do plano associado ao usuario logado.</p>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="conta-plano">Plano atual</label>
-            <input id="conta-plano" readonly>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
-
-<script src="/js/theme.js"></script>
-<script src="/js/app-api.js"></script>
-<script src="/js/app-layout.js"></script>
-<script src="/js/conta.js"></script>
-
+<body>
+  <script>
+    window.location.replace('/minha-conta.html')
+  </script>
 </body>
 </html>

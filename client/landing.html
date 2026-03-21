@@ -3,175 +3,192 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Precificador SaaS | Precificacao automatica para marketplaces</title>
+  <title>Zentry | Precificação inteligente</title>
   <link rel="stylesheet" href="/css/style.css?v=3">
+  <link rel="icon" type="image/svg+xml" href="/assets/zentry-mark.svg">
+  <script>
+    document.documentElement.setAttribute('data-theme', 'light')
+  </script>
 </head>
 <body class="landing-page">
   <header class="landing-header">
     <a class="landing-brand" href="/landing.html">
-      <span class="brand-mark">P</span>
-      <span>Precificador SaaS</span>
+      <img class="brand-logo" src="/assets/zentry-logo.png" alt="Zentry">
     </a>
     <nav class="landing-nav">
       <a href="#problema">Problema</a>
-      <a href="#solucao">Solucao</a>
+      <a href="#solucao">Solução</a>
       <a href="#funcionalidades">Funcionalidades</a>
       <a class="nav-login" href="/login.html">Entrar</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero-section">
-      <div class="hero-copy">
-        <span class="eyebrow">Precificacao inteligente para operar em escala</span>
-        <h1>Precifique automaticamente em todos os marketplaces</h1>
-        <p>
-          Calcule taxas, margem e lucro real em segundos para Mercado Livre,
-          Shopee e outros marketplaces.
-        </p>
-        <div class="hero-actions">
-          <a class="button-primary" href="/login.html">Comecar gratis</a>
-          <a class="button-ghost" href="#solucao">Ver como funciona</a>
-        </div>
-        <div class="hero-proof">
-          <span>Margem real por canal</span>
-          <span>Precificacao em lote</span>
-          <span>Visao de lucro consolidada</span>
-        </div>
-      </div>
-
-      <div class="hero-panel">
-        <div class="hero-panel-card">
-          <div class="hero-panel-top">
-            <span class="panel-badge">Motor de precificacao</span>
-            <span class="panel-chip">Tempo real</span>
+    <!-- HERO -->
+    <section class="hero-section landing-section landing-section-hero" data-reveal>
+      <div class="hero-content">
+        <div class="hero-text" data-reveal>
+          <span class="eyebrow">Precificação inteligente para quem vende em marketplace</span>
+          <h1>Pare de perder margem sem perceber</h1>
+          <p>Descubra o preço ideal considerando custos, taxas e concorrência — antes de anunciar.</p>
+          <div class="hero-actions">
+            <a class="button-primary" href="/login.html">Testar grátis agora</a>
+            <a class="button-ghost" href="#solucao">Ver como funciona</a>
           </div>
-
-          <div class="hero-metric-grid">
-            <article>
-              <strong>+12,4%</strong>
-              <span>Margem media monitorada</span>
-            </article>
-            <article>
-              <strong>15.000</strong>
-              <span>Produtos prontos para operar</span>
-            </article>
-            <article>
-              <strong>7 canais</strong>
-              <span>Taxas comparadas por marketplace</span>
-            </article>
+          <div class="hero-proof">
+            <span>Margem real por produto</span>
+            <span>Simulação por concorrência</span>
+            <span>Lucro claro por canal</span>
           </div>
+        </div>
 
-          <div class="hero-flow">
-            <div>
-              <span>Custo base</span>
-              <strong>R$ 79,90</strong>
+        <div class="hero-visual" data-reveal>
+          <div class="hero-visual-card">
+            <div class="preview-browser-bar">
+              <span></span><span></span><span></span>
             </div>
-            <div>
-              <span>Taxas + frete</span>
-              <strong>18,2%</strong>
+            <div class="hero-visual-head">
+              <div>
+                <span class="panel-badge">Dashboard Zentry</span>
+                <strong>Visão consolidada de preços</strong>
+              </div>
+              <span class="panel-chip">Ao vivo</span>
             </div>
-            <div>
-              <span>Preco sugerido</span>
-              <strong>R$ 129,90</strong>
+            <div class="hero-visual-metrics">
+              <article>
+                <span>Margem média</span>
+                <strong>18,7%</strong>
+                <small>+2,4% na semana</small>
+              </article>
+              <article>
+                <span>Produtos monitorados</span>
+                <strong>15.000</strong>
+                <small>Operação pronta para escalar</small>
+              </article>
+            </div>
+            <div class="hero-visual-chart">
+              <canvas id="graficoHero"></canvas>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="info-section" id="problema">
-      <div class="section-intro">
-        <span class="eyebrow">O problema</span>
-        <h2>Vendedores perdem margem quando precificam no escuro</h2>
-      </div>
-      <div class="info-grid">
-        <article class="info-card">
-          <h3>Taxas escondidas</h3>
-          <p>Comissao, frete, imposto e custos extras derrubam a margem quando nao entram no calculo final.</p>
-        </article>
-        <article class="info-card">
-          <h3>Preco sem consistencia</h3>
-          <p>O mesmo produto pode ficar caro em um canal e barato demais em outro sem uma base unica de decisao.</p>
-        </article>
-        <article class="info-card">
-          <h3>Escala manual nao fecha</h3>
-          <p>Em bases grandes, ajustar preco produto por produto consome tempo e aumenta o risco de erro operacional.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="solution-section" id="solucao">
-      <div class="section-intro">
-        <span class="eyebrow">A solucao</span>
-        <h2>Um fluxo unico para calcular o preco real de venda</h2>
-        <p>
-          O sistema centraliza os dados de custo e marketplace para calcular automaticamente o
-          preco ideal, com base nos componentes que mais impactam o resultado.
-        </p>
-      </div>
-
-      <div class="solution-grid">
-        <article class="solution-card">
-          <strong>Taxas de marketplace</strong>
-          <p>Considera taxa percentual, taxa fixa, frete medio, imposto e indices extras por canal.</p>
-        </article>
-        <article class="solution-card">
-          <strong>Margem</strong>
-          <p>Aplica margem desejada por produto e por marketplace com leitura direta do impacto no preco.</p>
-        </article>
-        <article class="solution-card">
-          <strong>Lucro estimado</strong>
-          <p>Mostra o lucro esperado apos custos e taxas para evitar vendas com margem negativa.</p>
-        </article>
-        <article class="solution-card">
-          <strong>Comparacao com concorrentes</strong>
-          <p>Permite simular cenarios de posicionamento e entender quanto sobra em cada estrategia.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="feature-section" id="funcionalidades">
-      <div class="section-intro">
-        <span class="eyebrow">Funcionalidades</span>
-        <h2>Operacao diaria com cara de SaaS de verdade</h2>
-      </div>
-
-      <div class="feature-grid">
-        <article class="feature-card">
-          <h3>Calculo automatico de preco</h3>
-          <p>Recalcule rapidamente o preco sugerido usando custos e taxas reais por canal.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Simulacao de preco do concorrente</h3>
-          <p>Compare cenarios sem gravar nada no banco e veja o impacto no resultado.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Analise de margem</h3>
-          <p>Identifique rapidamente produtos com margem negativa ou abaixo do esperado.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Dashboard de lucro</h3>
-          <p>Acompanhe indicadores consolidados para orientar decisao operacional e comercial.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Gestao de milhares de produtos</h3>
-          <p>Estrutura preparada para operar catalogos grandes sem depender de calculos manuais repetitivos.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="cta-section">
-      <div class="cta-card">
-        <div>
-          <span class="eyebrow">Comece agora</span>
-          <h2>Organize sua precificacao e pare de perder margem</h2>
-          <p>Entre na plataforma e use uma visao unica de custo, taxa, margem e lucro.</p>
+    <!-- DEPOIMENTOS -->
+    <section class="testimonial-section landing-section" id="depoimentos" data-reveal>
+      <div class="section-shell">
+        <div class="section-intro section-intro-centered">
+          <span class="eyebrow">Prova social</span>
+          <h2>Quem vende com dados não depende de sorte</h2>
+          <p>Empreendedores que usam o Zentry param de errar preço e começam a escalar com previsibilidade.</p>
         </div>
-        <a class="button-primary" href="/login.html">Criar conta gratis</a>
+
+        <div class="testimonial-grid">
+          <article class="testimonial-card">
+            <img class="testimonial-avatar" src="https://i.pravatar.cc/160?img=12">
+            <strong>Marcos Silva</strong>
+            <span>Vendedor Mercado Livre</span>
+            <p>"Hoje eu sei exatamente se vale a pena competir em cada produto."</p>
+          </article>
+          <article class="testimonial-card">
+            <img class="testimonial-avatar" src="https://i.pravatar.cc/160?img=32">
+            <strong>Juliana Costa</strong>
+            <span>Loja Shopee</span>
+            <p>"Parei de ajustar preço no feeling. Agora tenho controle total da margem."</p>
+          </article>
+          <article class="testimonial-card">
+            <img class="testimonial-avatar" src="https://i.pravatar.cc/160?img=68">
+            <strong>Ricardo Mendes</strong>
+            <span>Operação multicanal</span>
+            <p>"Finalmente sei onde ganho dinheiro e onde só giro estoque."</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROBLEMA -->
+    <section class="info-section landing-section" id="problema" data-reveal>
+      <div class="section-shell">
+        <div class="section-intro section-intro-centered">
+          <span class="eyebrow">O problema</span>
+          <h2>Você pode estar vendendo sem lucro e nem sabe</h2>
+          <p>Pequenos erros de cálculo, taxas escondidas e preços desalinhados acabam com sua margem no dia a dia.</p>
+        </div>
+
+        <div class="info-grid">
+          <article class="info-card">
+            <span class="card-icon">📉</span>
+            <h3>Taxas escondidas</h3>
+            <p>Frete, comissão e impostos corroem seu lucro sem você perceber.</p>
+          </article>
+          <article class="info-card">
+            <span class="card-icon">🎯</span>
+            <h3>Preço errado por canal</h3>
+            <p>O mesmo produto gera lucro em um canal e prejuízo em outro.</p>
+          </article>
+          <article class="info-card">
+            <span class="card-icon">⚠️</span>
+            <h3>Falsa sensação de lucro</h3>
+            <p>Você vende bem, mas no final do mês o dinheiro não aparece.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOLUÇÃO -->
+    <section class="solution-section landing-section" id="solucao" data-reveal>
+      <div class="section-shell">
+        <div class="section-intro section-intro-centered">
+          <span class="eyebrow">A solução</span>
+          <h2>Veja exatamente quanto você ganha antes de vender</h2>
+          <p>O Zentry mostra custo, taxa, margem e lucro real em cada produto e canal, em tempo real.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNCIONALIDADES -->
+    <section class="feature-section landing-section" id="funcionalidades">
+      <div class="section-shell">
+        <div class="section-intro section-intro-centered">
+          <span class="eyebrow">Funcionalidades</span>
+          <h2>Ferramentas para vender com precisão</h2>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="card-icon">💰</span>
+            <h3>Cálculo automático</h3>
+            <p>Preço ideal com base em custo e taxas reais.</p>
+          </article>
+          <article class="feature-card">
+            <span class="card-icon">🔎</span>
+            <h3>Simulação de concorrência</h3>
+            <p>Teste preços antes de aplicar e evite prejuízo.</p>
+          </article>
+          <article class="feature-card">
+            <span class="card-icon">📊</span>
+            <h3>Análise de margem</h3>
+            <p>Identifique onde você ganha e onde perde dinheiro.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section landing-section">
+      <div class="section-shell">
+        <div class="cta-card">
+          <div>
+            <h2>Você decide: continuar no escuro ou ter controle total</h2>
+            <p>Comece agora e descubra quanto você realmente ganha em cada venda.</p>
+          </div>
+          <a class="button-primary" href="/login.html">Começar grátis agora</a>
+        </div>
       </div>
     </section>
   </main>
-  <script src="/js/theme.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/landing.js"></script>
 </body>
 </html>

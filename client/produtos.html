@@ -1,66 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Produtos cadastrados</title>
-<link rel="stylesheet" href="/css/style.css?v=3">
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=/produtos-cadastrados.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos | Redirecionando</title>
 </head>
-<body data-app-page="produtos-cadastrados">
-
-<main class="main-content">
-  <div class="container">
-    <div class="page-stack">
-      <div class="page-header">
-        <div>
-          <h1>Produtos cadastrados</h1>
-          <p>Pesquise, acompanhe e edite o catalogo sem misturar a listagem com o formulario.</p>
-        </div>
-        <a class="button-primary" href="/produtos-novo.html">+ Adicionar Produto</a>
-      </div>
-
-      <div class="card table-card">
-        <div class="toolbar">
-          <input id="busca-produto" class="search-input" placeholder="Buscar produto por SKU, nome ou EAN">
-          <button id="atualizar-lista-button" type="button" class="button-secondary">Atualizar</button>
-        </div>
-
-        <div id="produtos-feedback" class="feedback"></div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>SKU</th>
-                <th>Nome</th>
-                <th>Categoria</th>
-                <th>EAN</th>
-                <th>Estoque</th>
-                <th>Custo</th>
-                <th>Preco</th>
-                <th>Marketplaces</th>
-                <th>Acoes</th>
-              </tr>
-            </thead>
-            <tbody id="tabela-produtos">
-              <tr>
-                <td colspan="10">Carregando produtos...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div id="paginacao"></div>
-      </div>
-    </div>
-  </div>
-</main>
-
-<script src="/js/theme.js"></script>
-<script src="/js/app-api.js"></script>
-<script src="/js/app-layout.js"></script>
-<script src="/js/produtos-lista.js"></script>
-
+<body>
+  <script>
+    window.location.replace('/produtos-cadastrados.html')
+  </script>
 </body>
 </html>
