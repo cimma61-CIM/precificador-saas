@@ -20,62 +20,74 @@
       type: 'link',
       id: 'dashboard',
       href: '/dashboard.html',
-      label: 'Dashboard'
+      label: 'Dashboard',
+      icon: '📊'
     },
     {
       type: 'link',
       id: 'dashboard-financeiro',
       href: '/dashboard-financeiro.html',
-      label: 'Financeiro'
+      label: 'Financeiro',
+      icon: '💰'
     },
     {
       type: 'submenu',
       id: 'cadastros',
       label: 'Cadastros',
+      icon: '📝',
       children: [
-        { id: 'clientes-fornecedores', href: '#', label: 'Clientes e Fornecedores', disabled: true },
-        { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos' },
-        { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true },
-        { id: 'categorias', href: '/categorias.html', label: 'Categorias' },
-        { id: 'vendedores', href: '#', label: 'Vendedores', disabled: true },
-        { id: 'embalagens', href: '#', label: 'Embalagens', disabled: true },
-        { id: 'relatorios', href: '#', label: 'Relatorios', disabled: true }
+        { id: 'clientes-fornecedores', href: '#', label: 'Clientes e Fornecedores', disabled: true, icon: '👥' },
+        { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos', icon: '📦' },
+        { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true, icon: '📣' },
+        { id: 'categorias', href: '/categorias.html', label: 'Categorias', icon: '🍿' },
+        { id: 'vendedores', href: '#', label: 'Vendedores', disabled: true, icon: '👀' },
+        { id: 'embalagens', href: '#', label: 'Embalagens', disabled: true, icon: '💼' },
+        { id: 'relatorios', href: '#', label: 'Relatorios', disabled: true, icon: '📊' }
       ]
     },
     {
       type: 'group',
       label: 'Precificacao',
+      icon: '🔢',
       children: [
-        { id: 'regras-preco', href: '/regras-preco.html', label: 'Regras de preco' },
-        { id: 'reprecificacao', href: '/reprecificacao.html', label: 'Reprecificacao' }
+        { id: 'regras-preco', href: '/regras-preco.html', label: 'Regras de preco', icon: '💾' },
+        { id: 'reprecificacao', href: '/reprecificacao.html', label: 'Reprecificacao', icon: '🔄' }
       ]
     },
     {
       type: 'link',
       id: 'marketplaces',
       href: '/marketplaces.html',
-      label: 'Marketplaces'
+      label: 'Marketplaces',
+      icon: '🛍️'
     },
     {
       type: 'link',
       id: 'taxas',
       href: '/taxas.html',
-      label: 'Taxas'
+      label: 'Taxas',
+      icon: '📐'
     },
     {
       type: 'group',
       label: 'Ferramentas',
+      icon: '🔧',
       children: [
-        { id: 'simulador-preco', href: '/simulador-preco.html', label: 'Simulador de preco' }
+        { id: 'simulador-preco', href: '/simulador-preco.html', label: 'Simulador de preco', icon: '💯' }
       ]
     },
     {
       type: 'link',
       id: 'minha-conta',
       href: '/minha-conta.html',
-      label: 'Minha conta'
+      label: 'Minha conta',
+      icon: '👤'
     }
   ]
+
+  // Estado do submenu
+  let submenuOpen = false
+  const cadastroSubmenu = navigation.find((item) => item.id === 'cadastros')
 
   function renderLink(link, className = 'menu-link') {
     const classes = [
@@ -86,8 +98,11 @@
       .filter(Boolean)
       .join(' ')
 
+    const icon = link.icon || '•'
+    const title = link.label
+
     return `
-      <a class="${classes}" href="${link.disabled ? '#' : link.href}" ${link.disabled ? 'aria-disabled="true"' : ''}>
+      <a class="${classes}" href="${link.disabled ? '#' : link.href}" title="${title}" data-icon="${icon}" ${link.disabled ? 'aria-disabled="true"' : ''}>
         ${link.label}
       </a>
     `
@@ -101,35 +116,14 @@
         class="menu-link menu-link-toggle ${isActive ? 'active' : ''}"
         type="button"
         data-submenu-toggle="${item.id}"
-        aria-expanded="${isActive ? 'true' : 'false'}"
+        data-has-submenu="true"
+        aria-expanded="false"
       >
         <span>${item.label}</span>
         <span class="menu-link-toggle-icon" aria-hidden="true">&rsaquo;</span>
       </button>
     `
   }
-
-  function renderSubmenuPanel(item) {
-    const isActive = item.children.some((child) => child.id === pagina)
-
-    return `
-      <aside
-        class="sidebar-submenu ${isActive ? 'is-open' : ''}"
-        data-submenu-panel="${item.id}"
-        aria-hidden="${isActive ? 'false' : 'true'}"
-      >
-        <div class="sidebar-submenu-head">
-          <span class="sidebar-submenu-kicker">Cadastros</span>
-        </div>
-        <nav class="sidebar-submenu-nav">
-          ${item.children.map((child) => renderLink(child, 'sidebar-submenu-link')).join('')}
-        </nav>
-      </aside>
-    `
-  }
-
-  const cadastroSubmenu = navigation.find((item) => item.type === 'submenu' && item.id === 'cadastros')
-  const cadastroActive = Boolean(cadastroSubmenu?.children.some((child) => child.id === pagina))
 
   const sidebar = document.createElement('aside')
   sidebar.className = 'sidebar'
@@ -174,61 +168,191 @@
   `
 
   document.body.insertBefore(sidebar, mainContent)
-  if (cadastroSubmenu) {
-    document.body.insertAdjacentHTML('afterbegin', renderSubmenuPanel(cadastroSubmenu))
-  }
+
+  // Criar painel de submenu lateral
+  const submenuPanel = document.createElement('aside')
+  submenuPanel.className = 'sidebar-submenu-panel'
+  submenuPanel.setAttribute('data-submenu-panel', 'cadastros')
+  submenuPanel.setAttribute('aria-hidden', 'true')
+  submenuPanel.innerHTML = `
+    <div class="sidebar-submenu-header">
+      <h3>${cadastroSubmenu?.label || 'Menu'}</h3>
+      <button
+        class="sidebar-submenu-close"
+        type="button"
+        aria-label="Fechar menu"
+      >
+        ×
+      </button>
+    </div>
+    <nav class="sidebar-submenu-items">
+      ${cadastroSubmenu?.children.map((child) => renderLink(child, 'sidebar-submenu-item')).join('') || ''}
+    </nav>
+  `
+
+  document.body.insertBefore(submenuPanel, mainContent)
 
   document.getElementById('sidebar-logout-button')?.addEventListener('click', logoutUsuario)
 
+  // ========================================
+  // CONTROLE CENTRAL DO SUBMENU
+  // ========================================
+
   const submenuToggle = document.querySelector('[data-submenu-toggle="cadastros"]')
-  const submenuPanel = document.querySelector('[data-submenu-panel="cadastros"]')
+  const submenuCloseBtn = document.querySelector('.sidebar-submenu-close')
+  const menu = document.querySelector('.menu')
 
-  function setSubmenuState(isOpen) {
-    if (!submenuToggle || !submenuPanel) {
+  /**
+   * Função centralizada para controlar o estado do submenu
+   * Garante que DOM, state e attributes estão sempre sincronizados
+   * @param {boolean} isOpen - true para abrir, false para fechar
+   */
+  function setSubmenuOpen(isOpen) {
+    // Evitar múltiplas atualizações desnecessárias
+    if (submenuOpen === isOpen) {
       return
     }
 
-    submenuToggle.setAttribute('aria-expanded', String(isOpen))
-    submenuPanel.classList.toggle('is-open', isOpen)
+    // Atualizar state
+    submenuOpen = isOpen
+
+    // 1. Sincronizar classe CSS no painel
+    if (isOpen) {
+      submenuPanel.classList.add('is-open')
+    } else {
+      submenuPanel.classList.remove('is-open')
+    }
+
+    // 2. Sincronizar atributo aria-hidden
     submenuPanel.setAttribute('aria-hidden', String(!isOpen))
+
+    // 3. Sincronizar aria-expanded no toggle
+    if (submenuToggle) {
+      submenuToggle.setAttribute('aria-expanded', String(isOpen))
+    }
+
+    // 4. Sincronizar data-submenu-open no main-content
+    if (isOpen) {
+      mainContent.setAttribute('data-submenu-open', 'true')
+    } else {
+      mainContent.removeAttribute('data-submenu-open')
+    }
+
+    // Log para debug
+    console.log(`[Submenu] Estado Alterado: ${isOpen ? '✓ ABERTO' : '✗ FECHADO'}`)
+
+    // Salvar estado para persistir entre navegações
+    sessionStorage.setItem('submenuOpen', String(isOpen))
   }
 
-  if (cadastroActive) {
-    setSubmenuState(true)
+  /**
+   * LISTENER 1: Toggle (botão "Cadastros")
+   * Abre/fecha o submenu ao clicar
+   */
+  if (submenuToggle) {
+    submenuToggle.addEventListener('click', (e) => {
+      e.stopPropagation()
+      setSubmenuOpen(!submenuOpen)
+    })
   }
 
-  submenuToggle?.addEventListener('click', () => {
-    const isOpen = submenuToggle.getAttribute('aria-expanded') === 'true'
-    setSubmenuState(!isOpen)
-  })
-
-  document.addEventListener('click', (event) => {
-    if (!submenuToggle || !submenuPanel) {
-      return
-    }
-
-    const target = event.target
-
-    if (!(target instanceof Node)) {
-      return
-    }
-
-    if (submenuToggle.contains(target) || submenuPanel.contains(target)) {
-      return
-    }
-
-    setSubmenuState(false)
-  })
-
-  document.querySelectorAll('.is-disabled').forEach((link) => {
-    link.addEventListener('click', (event) => {
-      event.preventDefault()
+  /**
+   * LISTENER 2: Botão de fechar (×)
+   * Fecha o submenu
+   */
+  if (submenuCloseBtn) {
+    submenuCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      setSubmenuOpen(false)
     })
+  }
+
+  /**
+   * LISTENER 2.5: Clique no submenu
+   * Se clicar fora dos items do submenu, fecha o submenu
+   * Permite clicar nos itens da sidebar que ficam visíveis nos 20%
+   */
+  if (submenuPanel) {
+    submenuPanel.addEventListener('click', (e) => {
+      // Se clicou em um item do submenu, NÃO fecha
+      if (e.target.closest('.sidebar-submenu-item')) {
+        return
+      }
+
+      // Se clicou no header ou botão de fechar, deixa passar
+      if (e.target.closest('.sidebar-submenu-header')) {
+        return
+      }
+
+      // Se clicou em qualquer outro lugar, fecha o submenu
+      if (submenuOpen) {
+        console.log('[Submenu] Clique fora dos items → Fechando')
+        setSubmenuOpen(false)
+      }
+    })
+
+    // Adicionar listener em cada item do submenu para evitar propagação
+    document.querySelectorAll('.sidebar-submenu-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation()
+        console.log('[Submenu] Item clicado - mantendo aberto')
+      })
+    })
+  }
+
+  /**
+   * LISTENER 3: Tecla ESC
+   * Fecha o submenu apenas com ESC (ou outro menu)
+   */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && submenuOpen) {
+      e.preventDefault()
+      setSubmenuOpen(false)
+      // Retornar foco para o botão
+      if (submenuToggle) {
+        submenuToggle.focus()
+      }
+    }
   })
 
-  document.querySelectorAll('.sidebar-submenu-link:not(.is-disabled)').forEach((link) => {
-    link.addEventListener('click', () => {
-      setSubmenuState(false)
+  /**
+   * LISTENER 4: Clique em items do menu principal
+   * Fecha APENAS ao clicar em outro menu (Dashboard, Financeiro, etc)
+   * Submenu fica aberto se clicar em items do próprio submenu
+   */
+  if (menu) {
+    menu.addEventListener('click', (e) => {
+      // Ignorar se clicou o toggle do submenu
+      if (e.target.closest('[data-submenu-toggle]')) {
+        return
+      }
+
+      // Ignorar cliques em items do submenu - NÃO deve fechar
+      if (e.target.closest('.sidebar-submenu-panel')) {
+        return
+      }
+
+      // Se clicou em um link do menu principal (a, button), fechar submenu
+      const link = e.target.closest('a, button')
+      if (link && submenuOpen) {
+        console.log('[Submenu] Clique em outro item do menu → Fechando')
+        setSubmenuOpen(false)
+      }
     })
-  })
+  }
+
+  /**
+   * INICIALIZAÇÃO: Recuperar estado salvo ou começar FECHADO
+   * Persiste o estado do submenu entre navegações
+   */
+  const submenuState = sessionStorage.getItem('submenuOpen') === 'true'
+  setSubmenuOpen(submenuState)
+
+  // ===================================
+  // SIDEBAR FIXA - SEM COMPORTAMENTO DE HOVER
+  // ===================================
+  // Sidebar é sempre expandida (240px) e fixa
+  // Não há hover automático - comportamento controlado apenas por clique do submenu
+  sidebar.classList.add('is-expanded')
 })()
+

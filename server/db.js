@@ -41,20 +41,47 @@ function resolveSslConfig() {
     : { rejectUnauthorized: false }
 }
 
-const pool = new Pool(
-  process.env.DATABASE_URL
-    ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: resolveSslConfig()
-      }
-    : {
-        user: 'postgres',
-        host: 'localhost',
-        database: 'precificador',
-        password: 'postgres123',
-        port: 5432,
-        ssl: resolveSslConfig()
-      }
-)
+// Determinar configuração de conexão com prioridade clara
+const getConnectionConfig = () => {
+  // Prioridade 1: DATABASE_URL se definido e não vazio
+  const dbUrl = String(process.env.DATABASE_URL || '').trim()
+  if (dbUrl && dbUrl.length > 0 && dbUrl !== 'postgres://') {
+    return {
+      connectionString: dbUrl,
+      ssl: resolveSslConfig()
+    }
+  }
+
+  // Prioridade 2: Variáveis individuais DB_* se definidas
+  const dbUser = String(process.env.DB_USER || '').trim()
+  const dbHost = String(process.env.DB_HOST || '').trim()
+  const dbName = String(process.env.DB_NAME || '').trim()
+  const dbPassword = String(process.env.DB_PASSWORD || '').trim()
+  const dbPort = String(process.env.DB_PORT || '5432').trim()
+
+  if (dbUser && dbHost && dbName) {
+    return {
+      user: dbUser,
+      host: dbHost,
+      database: dbName,
+      password: dbPassword,
+      port: parseInt(dbPort, 10) || 5432,
+      ssl: resolveSslConfig()
+    }
+  }
+
+  // Fallback: Credenciais default (deve ser raro)
+  console.warn('[db] Usando credenciais padrão - configure DATABASE_URL ou DB_* no .env')
+  return {
+    user: 'postgres',
+    host: 'localhost',
+    database: 'precificador',
+    password: 'postgres123',
+    port: 5432,
+    ssl: resolveSslConfig()
+  }
+}
+
+const pool = new Pool(getConnectionConfig())
 
 module.exports = pool

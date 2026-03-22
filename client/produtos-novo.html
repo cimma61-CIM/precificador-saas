@@ -21,6 +21,9 @@
 
       <div class="card">
         <input id="produto-id" type="hidden">
+        <p class="card-subtitle">
+          Informe um preço manual ou uma margem desejada. Se ambos ficarem vazios, o formulário aplica um fallback assistido de 30% na venda direta para não deixar o cadastro sem preço inicial.
+        </p>
 
         <div class="form-grid">
           <div class="field">
@@ -65,10 +68,12 @@
           <div class="field">
             <label for="preco_venda">Preco de venda</label>
             <input id="preco_venda" type="number" step="0.01" placeholder="Venda direta">
+            <small class="field-help">Se você preencher o preço, a margem vira apenas leitura para evitar conflito.</small>
           </div>
           <div class="field">
             <label for="margem_desejada">Margem desejada</label>
             <input id="margem_desejada" type="number" step="0.0001" placeholder="Ex.: 0.20">
+            <small class="field-help">Se o preço ficar vazio, a venda direta pode ser formada a partir desta margem.</small>
           </div>
           <div class="field">
             <label for="quantidade">Quantidade</label>

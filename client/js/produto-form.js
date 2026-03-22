@@ -7,6 +7,7 @@ const produtoFormState = {
   modoPrecoManual: false,
   ncmAutocompleteTimer: null
 }
+const FALLBACK_MARGEM_DIRETA = 0.3
 
 function setFeedback(mensagem, tipo = '') {
   const feedback = document.getElementById('produtos-feedback')
@@ -72,6 +73,28 @@ function calcularPrecoDireto(custo, margemDesejada) {
   }
 
   return (custoNumero / (1 - margemNumero)).toFixed(2)
+}
+
+function aplicarFallbackControladoPrecoDireto() {
+  const custoInput = document.getElementById('custo')
+  const precoVendaInput = document.getElementById('preco_venda')
+  const margemInput = document.getElementById('margem_desejada')
+  const custo = normalizarValorMonetarioInput(custoInput.value)
+  const precoVenda = precoVendaInput.value.trim()
+  const margem = margemInput.value.trim()
+
+  if (precoVenda || margem || custo <= 0) {
+    return false
+  }
+
+  margemInput.value = String(FALLBACK_MARGEM_DIRETA)
+  produtoFormState.modoPrecoManual = false
+  atualizarLogicaPrecoMargem('margem_desejada')
+  setFeedback(
+    'Fallback assistido aplicado: margem inicial de 30% na venda direta. Ajuste antes de salvar se necessário.',
+    'text-success'
+  )
+  return true
 }
 
 function calcularIndicadoresPorPreco(custo, taxa, precoFinal) {
@@ -529,6 +552,8 @@ function montarPayloadProduto() {
 async function salvarProduto() {
   const produtoId = document.getElementById('produto-id').value
   const submitButton = document.getElementById('produto-submit-button')
+
+  aplicarFallbackControladoPrecoDireto()
 
   setButtonLoading(
     submitButton,
