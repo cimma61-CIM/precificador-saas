@@ -4,7 +4,8 @@ const pool = require('../db')
 const multer = require('multer')
 const {
   adicionarItemCompra,
-  criarCompra
+  criarCompra,
+  atualizarCompra
 } = require('../services/comprasService')
 const {
   confirmarImportacao,
@@ -86,12 +87,12 @@ router.post('/', async (req, res) => {
   const usuarioId = req.user.id
 
   try {
-    const compra = await criarCompra(usuarioId, req.body || {})
-    return res.status(201).json({ compra })
+    const resultado = await criarCompra(usuarioId, req.body || {})
+    return res.status(201).json(resultado)
   } catch (error) {
     console.error(error)
 
-    if (error.message === 'Fornecedor e obrigatorio' || error.message === 'Data da compra invalida') {
+    if (['Fornecedor e obrigatorio', 'Data da compra invalida', 'Contato_id invalido', 'Fornecedor_id invalido', 'Contato nao encontrado', 'Contato deve ser fornecedor ou ambos'].includes(error.message)) {
       return res.status(400).json({ erro: error.message })
     }
 
@@ -154,14 +155,17 @@ router.get('/', async (req, res) => {
         c.id,
         c.usuario_id,
         c.data,
-        c.fornecedor,
+        ct.nome AS fornecedor,
+        c.fornecedor_id,
         c.created_at,
         COUNT(ci.id)::int AS total_itens
       FROM compras c
       LEFT JOIN compras_itens ci
         ON ci.compra_id = c.id
+      LEFT JOIN contatos ct
+        ON ct.id = c.fornecedor_id
       WHERE c.usuario_id = $1
-      GROUP BY c.id, c.usuario_id, c.data, c.fornecedor, c.created_at
+      GROUP BY c.id, c.usuario_id, c.data, c.fornecedor_id, ct.nome, c.created_at
       ORDER BY c.data DESC, c.id DESC
       `,
       [usuarioId]
@@ -171,8 +175,8 @@ router.get('/', async (req, res) => {
       compras: result.rows.map(formatarCompra)
     })
   } catch (error) {
-    console.error(error)
-    return res.status(500).json({ erro: 'Erro ao listar compras' })
+    console.error('GET /compras error:', error)
+    return res.status(500).json({ erro: error.message || 'Erro ao listar compras' })
   }
 })
 
@@ -191,15 +195,18 @@ router.get('/:id', async (req, res) => {
         c.id,
         c.usuario_id,
         c.data,
-        c.fornecedor,
+        ct.nome AS fornecedor_nome,
+        c.fornecedor_id,
         c.created_at,
         COUNT(ci.id)::int AS total_itens
       FROM compras c
       LEFT JOIN compras_itens ci
         ON ci.compra_id = c.id
+      LEFT JOIN contatos ct
+        ON ct.id = c.fornecedor_id
       WHERE c.id = $1
         AND c.usuario_id = $2
-      GROUP BY c.id, c.usuario_id, c.data, c.fornecedor, c.created_at
+      GROUP BY c.id, c.usuario_id, c.data, c.fornecedor_id, ct.nome, c.created_at
       LIMIT 1
       `,
       [compraId, usuarioId]
@@ -239,6 +246,42 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error(error)
     return res.status(500).json({ erro: 'Erro ao buscar compra' })
+  }
+})
+
+router.put('/:id', async (req, res) => {
+  const usuarioId = req.user.id
+  const compraId = normalizarId(req.params.id)
+
+  if (!compraId) {
+    return res.status(400).json({ erro: 'ID invalido' })
+  }
+
+  try {
+    const resultado = await atualizarCompra(usuarioId, compraId, req.body || {})
+    return res.json(resultado)
+  } catch (error) {
+    console.error(error)
+
+    const mensagens400 = new Set([
+      'Compra nao encontrada',
+      'Produto invalido',
+      'Produto nao encontrado',
+      'Quantidade deve ser um inteiro maior que zero',
+      'Custo unitario deve ser um numero valido',
+      'Contato_id invalido',
+      'Fornecedor_id invalido',
+      'Contato nao encontrado',
+      'Contato deve ser fornecedor ou ambos'
+    ])
+
+    if (mensagens400.has(error.message)) {
+      return res.status(error.message === 'Compra nao encontrada' || error.message === 'Produto nao encontrado' ? 404 : 400).json({
+        erro: error.message
+      })
+    }
+
+    return res.status(500).json({ erro: error.message || 'Erro ao atualizar compra' })
   }
 })
 
