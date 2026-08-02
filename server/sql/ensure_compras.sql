@@ -2,20 +2,29 @@ CREATE TABLE IF NOT EXISTS compras (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     data DATE NOT NULL,
-    fornecedor VARCHAR(255) NOT NULL,
-    contato_id INTEGER NOT NULL REFERENCES contatos(id),
-    fornecedor_id INTEGER NOT NULL REFERENCES contatos(id),
+    fornecedor_id INTEGER REFERENCES contatos(id) ON DELETE SET NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_compras_usuario_data
-ON compras(usuario_id, data DESC, id DESC);
+ALTER TABLE compras
+  ADD COLUMN IF NOT EXISTS fornecedor_id INTEGER;
 
-CREATE INDEX IF NOT EXISTS idx_compras_contato_id
-ON compras(contato_id);
+DO $$
+BEGIN
+  ALTER TABLE compras
+    ADD CONSTRAINT compras_fornecedor_id_fkey
+    FOREIGN KEY (fornecedor_id)
+    REFERENCES contatos(id)
+    ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END
+$$;
 
 CREATE INDEX IF NOT EXISTS idx_compras_fornecedor_id
 ON compras(fornecedor_id);
+
+COMMENT ON COLUMN compras.fornecedor_id IS 'Fornecedor associado à compra; compras antigas podem não ter fornecedor definido.';
 
 CREATE TABLE IF NOT EXISTS compras_itens (
     id SERIAL PRIMARY KEY,
