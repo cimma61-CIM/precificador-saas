@@ -8,11 +8,17 @@ exports.up = async (pgm) => {
     ALTER TABLE compras
       ADD COLUMN IF NOT EXISTS fornecedor_id INTEGER;
 
-    ALTER TABLE compras
-      ADD CONSTRAINT IF NOT EXISTS compras_fornecedor_id_fkey
-      FOREIGN KEY (fornecedor_id)
-      REFERENCES contatos(id)
-      ON DELETE SET NULL;
+    DO $$
+    BEGIN
+      ALTER TABLE compras
+        ADD CONSTRAINT compras_fornecedor_id_fkey
+        FOREIGN KEY (fornecedor_id)
+        REFERENCES contatos(id)
+        ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN
+      NULL;
+    END
+    $$;
 
     CREATE INDEX IF NOT EXISTS idx_compras_fornecedor_id
       ON compras(fornecedor_id);
