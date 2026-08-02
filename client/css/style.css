@@ -1189,6 +1189,18 @@ button,
   font-weight:700;
 }
 
+.feedback.success{
+  background:color-mix(in srgb, var(--success) 10%, var(--panel));
+  border-color:var(--success);
+  color:var(--success);
+}
+
+.feedback.error{
+  background:color-mix(in srgb, var(--danger) 10%, var(--panel));
+  border-color:var(--danger);
+  color:var(--danger);
+}
+
 .text-danger{
   color:var(--danger);
   font-weight:700;

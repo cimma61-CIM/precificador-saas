@@ -36,7 +36,8 @@
       label: 'Cadastros',
       icon: '📝',
       children: [
-        { id: 'clientes-fornecedores', href: '#', label: 'Clientes e Fornecedores', disabled: true, icon: '👥' },
+        { id: 'contatos', href: '/contatos.html', label: 'Contatos', icon: '👥' },
+        { id: 'compras', href: '/compras.html', label: 'Compras', icon: '🛒' },
         { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos', icon: '📦' },
         { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true, icon: '📣' },
         { id: 'categorias', href: '/categorias.html', label: 'Categorias', icon: '🍿' },
