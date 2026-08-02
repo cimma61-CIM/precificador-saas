@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contatos</title>
+<link rel="stylesheet" href="/css/style.css?v=3">
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal.show {
+  display: flex;
+}
+.modal-content {
+  background: var(--panel);
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.modal-header h2 {
+  margin: 0;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+</style>
+</head>
+<body data-app-page="contatos">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Contatos</h1>
+          <p>Gerencie clientes e fornecedores do seu negócio.</p>
+        </div>
+        <button id="novo-contato-btn" class="button-primary">+ Novo contato</button>
+      </div>
+
+      <div class="card table-card">
+        <div class="toolbar">
+          <input id="busca-contato" class="search-input" placeholder="Buscar contato...">
+          <select id="filtro-tipo">
+            <option value="">Todos</option>
+            <option value="cliente">Cliente</option>
+            <option value="fornecedor">Fornecedor</option>
+          </select>
+        </div>
+
+        <div id="contatos-feedback" class="feedback"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th>Documento</th>
+                <th>Telefone</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-contatos">
+              <tr>
+                <td colspan="5">Carregando contatos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="modal-contato" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-titulo">Novo Contato</h2>
+      <button id="modal-close" class="modal-close">&times;</button>
+    </div>
+    <form id="form-contato">
+      <input id="contato-id" type="hidden">
+      <div class="form-grid">
+        <div class="field">
+          <label for="nome">Nome *</label>
+          <input id="nome" placeholder="Nome do contato" required>
+        </div>
+        <div class="field">
+          <label for="tipo">Tipo</label>
+          <select id="tipo" required>
+            <option value="cliente">Cliente</option>
+            <option value="fornecedor">Fornecedor</option>
+            <option value="ambos">Ambos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="documento">Documento</label>
+          <input id="documento" placeholder="CPF/CNPJ">
+        </div>
+        <div class="field">
+          <label for="telefone">Telefone</label>
+          <input id="telefone" placeholder="Telefone">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="Email">
+        </div>
+        <div class="field">
+          <label for="observacoes">Observações</label>
+          <textarea id="observacoes" placeholder="Observações"></textarea>
+        </div>
+      </div>
+      <div style="margin-top: 1rem; text-align: right;">
+        <button type="button" id="cancelar-btn" class="button-secondary">Cancelar</button>
+        <button type="submit" class="button-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/theme.js"></script>
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/contatos.js"></script>
+
+</body>
+</html>
