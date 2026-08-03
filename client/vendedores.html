@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendedores</title>
+<link rel="stylesheet" href="/css/style.css?v=3">
+</head>
+<body data-app-page="vendedores">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Vendedores</h1>
+          <p>Cadastre e gerencie vendedores em um único ponto de controle.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <h2>Novo vendedor</h2>
+          <button type="button" class="button-primary" id="novo-vendedor-button">Novo vendedor</button>
+        </div>
+        <p class="card-subtitle">Adicione vendedores para organizar contatos comerciais.</p>
+
+        <form id="vendedor-form" class="hidden">
+          <input id="vendedor-id" type="hidden">
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="vendedor-nome">Nome</label>
+              <input id="vendedor-nome" required placeholder="Ex.: Maria Silva">
+            </div>
+            <div class="field">
+              <label for="vendedor-email">Email</label>
+              <input id="vendedor-email" placeholder="Ex.: maria@exemplo.com">
+            </div>
+            <div class="field">
+              <label for="vendedor-telefone">Telefone</label>
+              <input id="vendedor-telefone" placeholder="Ex.: (11) 99999-9999">
+            </div>
+            <div class="field field-checkbox">
+              <label for="vendedor-ativo">
+                <input id="vendedor-ativo" type="checkbox" checked>
+                Ativo
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="button-primary" id="salvar-vendedor-button">Salvar vendedor</button>
+            <button type="button" class="button-secondary" id="vendedor-cancelar-button">Cancelar</button>
+          </div>
+        </form>
+
+        <div id="vendedores-feedback" class="feedback"></div>
+      </div>
+
+      <div class="card table-card">
+        <div class="toolbar">
+          <input id="vendedores-busca" class="search-input" placeholder="Buscar por nome, email ou telefone">
+          <label class="checkbox-label">
+            <input id="vendedores-include-inativos" type="checkbox">
+            Mostrar inativos
+          </label>
+          <button type="button" class="button-secondary" id="vendedores-atualizar-button">Atualizar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="vendedores-tabela">
+              <tr>
+                <td colspan="5">Carregando vendedores...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-footer" id="vendedores-paginacao"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/theme.js"></script>
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/vendedores.js"></script>
+
+</body>
+</html>

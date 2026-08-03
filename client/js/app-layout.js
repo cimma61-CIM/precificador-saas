@@ -41,7 +41,7 @@
         { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos', icon: '📦' },
         { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true, icon: '📣' },
         { id: 'categorias', href: '/categorias.html', label: 'Categorias', icon: '🍿' },
-        { id: 'vendedores', href: '#', label: 'Vendedores', disabled: true, icon: '👀' },
+        { id: 'vendedores', href: '/vendedores.html', label: 'Vendedores', icon: '👀' },
         { id: 'embalagens', href: '#', label: 'Embalagens', disabled: true, icon: '💼' },
         { id: 'relatorios', href: '#', label: 'Relatorios', disabled: true, icon: '📊' }
       ]
