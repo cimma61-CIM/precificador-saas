@@ -38,6 +38,10 @@ async function apiFetch(url, options = {}) {
     throw new Error((await resposta.text()) || 'Erro na requisicao')
   }
 
+  if (resposta.status === 204) {
+    return null
+  }
+
   if (!isJson) {
     throw new Error('Resposta invalida da API')
   }
