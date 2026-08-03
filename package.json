@@ -7,7 +7,6 @@
     "migrate:create": "node-pg-migrate create --migrations-dir server/migrations --envPath server/.env",
     "migrate:up": "node-pg-migrate up --migrations-dir server/migrations --envPath server/.env",
     "migrate:down": "node-pg-migrate down --migrations-dir server/migrations --envPath server/.env",
-    "migrate:legacy": "node server/createTable.js",
     "seed:marketplaces": "node server/seedMarketplaces.js"
   },
   "dependencies": {

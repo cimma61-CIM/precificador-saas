@@ -40,7 +40,7 @@ Os principais arquivos relacionados a precificacao atual sao:
 - `server/routes/produtos.js`
 - `server/routes/calculoRoutes.js`
 - `server/routes/taxasRoutes.js`
-- `server/createTable.js`
+- `server/migrations/`
 - `client/produtos.js`
 - `client/js/taxas.js`
 - `server/routes/analiseRoutes.js`
@@ -77,9 +77,9 @@ Os principais arquivos relacionados a precificacao atual sao:
 
 - cadastra e atualiza as taxas utilizadas no calculo
 
-`server/createTable.js`
+`server/migrations/`
 
-- define as tabelas e colunas usadas pela precificacao
+- define, de forma versionada, as tabelas e colunas usadas pela precificacao
 
 `client/produtos.js`
 

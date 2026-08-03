@@ -6,16 +6,11 @@
 
 ## Origem do schema atual
 
-O projeto agora possui migrations versionadas em `server/migrations/`, aplicadas por `npm run migrate:up`.
+As migrations versionadas em `server/migrations/`, aplicadas por `npm run migrate:up`, sao a fonte oficial e versionada do schema.
 
-Durante a transicao, o script legado `server/createTable.js` continua disponivel via `npm run migrate:legacy`.
+Os arquivos `server/sql/ensure_*.sql` ainda sao chamados no startup somente para compatibilidade temporaria com instalações antigas. Eles nao substituem migrations e qualquer alteração estrutural nova deve ser entregue em uma migration.
 
-Esse script legado:
-
-- cria tabelas quando necessario;
-- adiciona colunas faltantes;
-- cria indices;
-- aplica ajustes de compatibilidade em dados legados.
+O bootstrap acumulado anterior esta arquivado em `server/legacy/createTable.js` apenas para consulta historica. Ele nao faz parte do startup e nao possui comando de execucao.
 
 ## Tabelas principais
 

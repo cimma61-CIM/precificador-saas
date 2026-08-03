@@ -62,15 +62,11 @@ SMTP_FROM=Precificador SaaS <no-reply@seudominio.com>
 npm run migrate:up
 ```
 
-As migrations versionadas ficam em `server/migrations/` e usam `DATABASE_URL` carregado do `.env`.
+As migrations versionadas em `server/migrations/` sao a fonte oficial do schema e usam `DATABASE_URL` carregado do `.env`.
 
-Para compatibilidade, o script legado continua disponivel:
+Os arquivos `server/sql/ensure_*.sql`, chamados pelo startup, existem apenas como compatibilidade temporaria para instalações antigas. Novas alterações de schema devem ser feitas exclusivamente por uma migration versionada.
 
-```bash
-npm run migrate:legacy
-```
-
-Esse fluxo legado ainda existe enquanto a transicao para migrations versionadas e consolidada.
+O bootstrap historico foi arquivado em `server/legacy/createTable.js` e nao deve ser executado.
 
 ### 4. Popular marketplaces padrao
 
@@ -99,11 +95,9 @@ Depois de iniciar o servidor, acesse:
 ## Scripts
 
 - `npm start`: inicia a aplicacao
-- `npm run migrate`: abre o runner de migrations versionadas
 - `npm run migrate:create -- nome_da_migration`: cria uma nova migration em `server/migrations/`
 - `npm run migrate:up`: aplica migrations pendentes
 - `npm run migrate:down`: faz rollback da migration mais recente quando ela suporta `down`
-- `npm run migrate:legacy`: executa o bootstrap acumulado antigo em `server/createTable.js`
 - `npm run seed:marketplaces`: cadastra marketplaces padrao
 
 ## Migrations

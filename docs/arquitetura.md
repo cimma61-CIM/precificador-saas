@@ -42,14 +42,13 @@ O frontend e servido diretamente pelo Express via `express.static`.
 
 ### Banco de dados
 
-Local de migracao manual atual: `server/createTable.js`
+Fonte oficial do schema: migrations versionadas em `server/migrations/`, aplicadas manualmente com `npm run migrate:up`.
 
 Responsabilidades atuais:
 
-- criacao e ajuste incremental das tabelas;
-- compatibilidade com estruturas legadas;
-- criacao de indices para listagem e relacionamento;
-- normalizacao de marketplaces existentes.
+- registrar a evolucao versionada do schema;
+- permitir aplicacao e rollback controlados de migrations;
+- manter os arquivos `server/sql/ensure_*.sql` apenas como compatibilidade temporaria no startup.
 
 ## Fluxo geral
 
@@ -71,7 +70,7 @@ Responsabilidades atuais:
 
 - O projeto nao possui separacao entre app API e app frontend; ambos sao entregues pelo mesmo servidor.
 - O frontend consome rotas sem prefixo global `/api`; apenas a rota `GET /api` funciona como endpoint simples de verificacao.
-- O script `server/createTable.js` funciona como migracao acumulada e tambem carrega ajustes de compatibilidade.
+- `server/legacy/createTable.js` esta arquivado apenas para referencia historica; nao participa do startup e nao deve ser executado.
 
 ## Inconsistencias documentadas
 
