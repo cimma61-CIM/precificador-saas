@@ -42,7 +42,7 @@
         { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true, icon: '📣' },
         { id: 'categorias', href: '/categorias.html', label: 'Categorias', icon: '🍿' },
         { id: 'vendedores', href: '/vendedores.html', label: 'Vendedores', icon: '👀' },
-        { id: 'embalagens', href: '#', label: 'Embalagens', disabled: true, icon: '💼' },
+        { id: 'embalagens', href: '/embalagens.html', label: 'Embalagens', icon: '💼' },
         { id: 'relatorios', href: '#', label: 'Relatorios', disabled: true, icon: '📊' }
       ]
     },
