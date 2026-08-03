@@ -39,7 +39,7 @@
         { id: 'contatos', href: '/contatos.html', label: 'Contatos', icon: '👥' },
         { id: 'compras', href: '/compras.html', label: 'Compras', icon: '🛒' },
         { id: 'produtos-cadastrados', href: '/produtos-cadastrados.html', label: 'Produtos', icon: '📦' },
-        { id: 'anuncios', href: '#', label: 'Anuncios', disabled: true, icon: '📣' },
+        { id: 'anuncios', href: '/anuncios.html', label: 'Anuncios', icon: '📣' },
         { id: 'categorias', href: '/categorias.html', label: 'Categorias', icon: '🍿' },
         { id: 'vendedores', href: '/vendedores.html', label: 'Vendedores', icon: '👀' },
         { id: 'embalagens', href: '/embalagens.html', label: 'Embalagens', icon: '💼' },
