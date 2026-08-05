@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatórios</title>
+<link rel="stylesheet" href="/css/style.css?v=3">
+<style>
+  .relatorios-summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: stretch;
+  }
+
+  .relatorios-summary-grid .card-small {
+    width: 100%;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .relatorios-summary-grid .card-small h3 {
+    margin: 0 0 0.75rem;
+  }
+
+  .relatorios-summary-grid .card-small p {
+    margin: 0;
+    font-size: 1.65rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 600px) {
+    .relatorios-summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body data-app-page="relatorios">
+
+<main class="main-content">
+  <div class="container">
+    <div class="page-stack">
+      <div class="page-header">
+        <div>
+          <h1>Relatórios</h1>
+          <p>Visão operacional dos produtos e anúncios com base nos dados já cadastrados.</p>
+        </div>
+      </div>
+
+      <div class="card summary-cards">
+        <div class="relatorios-summary-grid">
+          <div class="card card-small">
+            <h3>Total de produtos</h3>
+            <p id="relatorios-total-produtos">-</p>
+          </div>
+          <div class="card card-small">
+            <h3>Produtos com estoque baixo</h3>
+            <p id="relatorios-produtos-estoque-baixo">-</p>
+          </div>
+          <div class="card card-small">
+            <h3>Valor estimado do estoque</h3>
+            <p id="relatorios-valor-estoque">-</p>
+          </div>
+          <div class="card card-small">
+            <h3>Total de anúncios</h3>
+            <p id="relatorios-total-anuncios">-</p>
+          </div>
+          <div class="card card-small">
+            <h3>Anúncios ativos</h3>
+            <p id="relatorios-anuncios-ativos">-</p>
+          </div>
+          <div class="card card-small">
+            <h3>Anúncios pausados</h3>
+            <p id="relatorios-anuncios-pausados">-</p>
+          </div>
+          <div class="card card-small">
+            <h3>Anúncios sem estoque</h3>
+            <p id="relatorios-anuncios-sem-estoque">-</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div>
+            <h2>Produtos</h2>
+            <p class="card-subtitle">Margem bruta estimada não considera taxas de marketplace.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="relatorios-produtos-busca" class="search-input" placeholder="Buscar por produto, SKU, EAN ou categoria">
+          <select id="relatorios-produtos-filtro-categoria" class="filter-select">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select id="relatorios-produtos-filtro-situacao" class="filter-select">
+            <option value="">Todas as situações</option>
+            <option value="estoque_baixo">Estoque baixo</option>
+            <option value="sem_estoque">Sem estoque</option>
+            <option value="margem_negativa">Margem negativa</option>
+            <option value="sem_preco">Sem preço</option>
+          </select>
+          <button type="button" class="button-secondary" id="relatorios-produtos-atualizar">Atualizar</button>
+        </div>
+
+        <div id="relatorios-produtos-feedback" class="feedback"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Custo</th>
+                <th>Preço de venda</th>
+                <th>Quantidade</th>
+                <th>Estoque mínimo</th>
+                <th>Margem bruta estimada</th>
+                <th>Situações</th>
+              </tr>
+            </thead>
+            <tbody id="relatorios-produtos-tabela">
+              <tr>
+                <td colspan="8">Carregando produtos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="relatorios-produtos-paginacao"></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div>
+            <h2>Anúncios</h2>
+            <p class="card-subtitle">Ainda não há dados de vendas, giro ou ranking de vendas neste módulo.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="relatorios-anuncios-busca" class="search-input" placeholder="Buscar por produto, anúncio ou título">
+          <select id="relatorios-anuncios-filtro-marketplace" class="filter-select">
+            <option value="">Todos os marketplaces</option>
+          </select>
+          <select id="relatorios-anuncios-filtro-status" class="filter-select">
+            <option value="">Todos os status</option>
+            <option value="ativo">Ativo</option>
+            <option value="pausado">Pausado</option>
+            <option value="sem_estoque">Sem estoque</option>
+          </select>
+          <button type="button" class="button-secondary" id="relatorios-anuncios-atualizar">Atualizar</button>
+        </div>
+
+        <div id="relatorios-anuncios-feedback" class="feedback"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Marketplace</th>
+                <th>SKU do anúncio</th>
+                <th>Preço</th>
+                <th>Estoque</th>
+                <th>Status</th>
+                <th>Ads</th>
+                <th>Full</th>
+                <th>Promoção</th>
+              </tr>
+            </thead>
+            <tbody id="relatorios-anuncios-tabela">
+              <tr>
+                <td colspan="9">Carregando anúncios...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="relatorios-anuncios-paginacao"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/theme.js"></script>
+<script src="/js/app-api.js"></script>
+<script src="/js/app-layout.js"></script>
+<script src="/js/relatorios.js"></script>
+
+</body>
+</html>
