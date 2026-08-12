@@ -5,6 +5,7 @@ client/node_modules/
 .env
 .env.local
 server/.env
+server/.env.bootstrap-test
 client/.env
 
 npm-debug.log*

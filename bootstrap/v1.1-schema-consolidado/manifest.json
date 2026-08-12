@@ -1,0 +1,26 @@
+{
+  "bootstrapVersion": "v1.1-schema-consolidado",
+  "sourceGitTag": "v1.1-schema-consolidado",
+  "cutoverMigration": "20260328100000_finalize-compras-fornecedor-schema",
+  "postgresql": {
+    "requiredExtension": "pg_trgm"
+  },
+  "schemaOrder": [
+    "schema/00_extensions.sql",
+    "schema/10_tables.sql",
+    "schema/20_constraints.sql",
+    "schema/30_indexes.sql",
+    "reference-data/10_tipos_contato.sql",
+    "reference-data/20_marketplaces.sql",
+    "reference-data/ncm/30_ncm.sql"
+  ],
+  "traceability": {
+    "usuarios_ncm_marketplaces_produtos_produtos_marketplaces_taxas_marketplace": "v1.1-schema-consolidado:server/createTable.js",
+    "categorias": "v1.1-schema-consolidado:server/createTable.js + server/sql/ensure_categorias.sql",
+    "contatos": "v1.1-schema-consolidado:server/migrations/20260322150000_create_contatos.js",
+    "historico_produtos_compras_produto_fornecedor": "v1.1-schema-consolidado:server/sql/ensure_*.sql",
+    "compras_fornecedor_id": "v1.1-schema-consolidado:server/migrations/20260328100000_finalize-compras-fornecedor-schema.js",
+    "pg_trgm": "v1.1-schema-consolidado:server/migrations/20260316183000_produtos-nome-trgm.js",
+    "marketplaces_seed": "v1.1-schema-consolidado:server/seedMarketplaces.js"
+  }
+}

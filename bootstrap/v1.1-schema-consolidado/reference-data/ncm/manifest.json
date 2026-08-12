@@ -1,0 +1,25 @@
+{
+  "source": "Sistema Classif — Receita Federal / Portal Único Siscomex",
+  "url": "https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json",
+  "obtainedAtUtc": "2026-08-12T19:54:34Z",
+  "sourceStatus": "materialized",
+  "sourceLastUpdate": "Vigente em 12/08/2026",
+  "sourceAct": "Resolução Gecex nº 926/2026",
+  "normalization": {
+    "terminalCode": "remove non-digits from Codigo; require exactly 8 digits",
+    "currentValidity": "Data_Fim must equal 31/12/9999",
+    "description": "Descricao must be non-empty",
+    "uniqueness": "normalized terminal code must be unique"
+  },
+  "validation": {
+    "rawRecords": 15156,
+    "currentTerminalRecords": 10514,
+    "duplicateNormalizedTerminalCodes": 0
+  },
+  "artifacts": {
+    "sourceJson": "source.json",
+    "sql": "30_ncm.sql",
+    "sourceJsonSha256": "673571D70E57DB1789F50FE4F4B806583785F2116A41D42F4F69361B99E98C4B",
+    "sqlSha256": "448C24006112F4EE53480DE91DBF0453DACB86BF4E5E3442C246DFA080E2F069"
+  }
+}

@@ -68,6 +68,31 @@ Os arquivos `server/sql/ensure_*.sql`, chamados pelo startup, existem apenas com
 
 O bootstrap historico foi arquivado em `server/legacy/createTable.js` e nao deve ser executado.
 
+### Banco novo
+
+Para provisionar um banco PostgreSQL totalmente vazio, use:
+
+```bash
+npm run db:bootstrap
+```
+
+O comando aplica o baseline oficial, registra como aplicadas as migrations ate `20260328100000_finalize-compras-fornecedor-schema` e executa somente as migrations posteriores. Ele exige `DATABASE_URL` em `server/.env`, permissoes para criar objetos e `pg_trgm`, e recusa qualquer banco que ja tenha tabelas do Zentry ou migrations registradas.
+
+#### Teste isolado do bootstrap
+
+1. No pgAdmin, crie manualmente um banco PostgreSQL vazio chamado `zentry_bootstrap_test`.
+2. Copie `server/.env.bootstrap-test.example` para `server/.env.bootstrap-test`. Esse arquivo real e local nao e versionado.
+3. Ajuste somente a `DATABASE_URL` do novo arquivo para apontar exclusivamente para `zentry_bootstrap_test`.
+4. Execute o bootstrap informando o arquivo de ambiente de teste:
+
+```bash
+node server/scripts/bootstrapDatabase.js --env-file server/.env.bootstrap-test
+```
+
+Tambem e possivel usar `npm run db:bootstrap -- --env-file server/.env.bootstrap-test`. Sem `--env-file`, o comando continua usando `server/.env`.
+
+Para bancos existentes, use somente `npm run migrate:up`.
+
 ### 4. Popular marketplaces padrao
 
 ```bash
@@ -98,6 +123,7 @@ Depois de iniciar o servidor, acesse:
 - `npm run migrate:create -- nome_da_migration`: cria uma nova migration em `server/migrations/`
 - `npm run migrate:up`: aplica migrations pendentes
 - `npm run migrate:down`: faz rollback da migration mais recente quando ela suporta `down`
+- `npm run db:bootstrap`: provisiona apenas banco novo e vazio pelo baseline oficial
 - `npm run seed:marketplaces`: cadastra marketplaces padrao
 
 ## Migrations
