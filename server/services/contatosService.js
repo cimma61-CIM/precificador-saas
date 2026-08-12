@@ -61,24 +61,44 @@ function normalizarObservacoes(valor) {
   return String(valor || '').trim()
 }
 
+function selecionarColunasContato(alias = 'c') {
+  return `
+    ${alias}.id,
+    ${alias}.nome,
+    COALESCE(
+      ${alias}.tipo,
+      (
+        SELECT CASE
+          WHEN BOOL_OR(LOWER(tt.nome) = 'fornecedor')
+            AND BOOL_OR(LOWER(tt.nome) = 'cliente') THEN 'ambos'
+          WHEN BOOL_OR(LOWER(tt.nome) = 'fornecedor') THEN 'fornecedor'
+          ELSE 'cliente'
+        END
+        FROM contato_tipos ct
+        INNER JOIN tipos_contato tt ON tt.id = ct.tipo_id
+        WHERE ct.contato_id = ${alias}.id
+      ),
+      'cliente'
+    ) AS tipo,
+    ${alias}.documento,
+    ${alias}.telefone,
+    ${alias}.email,
+    ${alias}.observacoes,
+    ${alias}.usuario_id,
+    ${alias}.criado_em,
+    ${alias}.atualizado_em
+  `
+}
+
 // ✅ Listar contatos por usuário
 async function listarContatos(usuarioId) {
   const result = await pool.query(
     `
     SELECT
-      id,
-      nome,
-      tipo,
-      documento,
-      telefone,
-      email,
-      observacoes,
-      usuario_id,
-      criado_em,
-      atualizado_em
-    FROM contatos
-    WHERE usuario_id = $1
-    ORDER BY criado_em DESC
+      ${selecionarColunasContato('c')}
+    FROM contatos c
+    WHERE c.usuario_id = $1
+    ORDER BY c.criado_em DESC
     `,
     [usuarioId]
   )
@@ -91,18 +111,9 @@ async function buscarContatoPorId(usuarioId, contatoId) {
   const result = await pool.query(
     `
     SELECT
-      id,
-      nome,
-      tipo,
-      documento,
-      telefone,
-      email,
-      observacoes,
-      usuario_id,
-      criado_em,
-      atualizado_em
-    FROM contatos
-    WHERE id = $1 AND usuario_id = $2
+      ${selecionarColunasContato('c')}
+    FROM contatos c
+    WHERE c.id = $1 AND c.usuario_id = $2
     LIMIT 1
     `,
     [contatoId, usuarioId]
