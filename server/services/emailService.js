@@ -53,7 +53,7 @@ async function sendResetPasswordEmail({ to, resetLink }) {
   await transporter.sendMail({
     from,
     to,
-    subject: 'Recuperacao de senha - Precificador SaaS',
+    subject: 'Recuperacao de senha - Zentry',
     html: `
       <div style="font-family: Arial, sans-serif; color: #102033; line-height: 1.5;">
         <h2>Recuperacao de senha</h2>

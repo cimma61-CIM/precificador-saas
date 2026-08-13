@@ -50,7 +50,7 @@ app.use(express.json())
 app.use(express.static(clientPath))
 
 app.get('/api', (req, res) => {
-  res.json({ mensagem: 'Precificador SaaS API rodando' })
+  res.json({ mensagem: 'Zentry API rodando' })
 })
 
 app.get('/', (req, res) => {

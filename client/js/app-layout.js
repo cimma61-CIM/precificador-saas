@@ -132,7 +132,7 @@
     <div class="sidebar-top">
       <a class="sidebar-brand-link" href="/dashboard.html">
         <div class="brand">
-          <h2>Precificador</h2>
+          <h2>Zentry</h2>
           <span>Operacao SaaS para marketplaces</span>
         </div>
       </a>
@@ -356,4 +356,3 @@
   // Não há hover automático - comportamento controlado apenas por clique do submenu
   sidebar.classList.add('is-expanded')
 })()
-
