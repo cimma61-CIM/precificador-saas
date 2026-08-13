@@ -16,6 +16,35 @@ CREATE TABLE public.ncm (
   descricao TEXT NOT NULL
 );
 
+CREATE TABLE public.ncm_catalog_versions (
+  id SERIAL PRIMARY KEY,
+  versao VARCHAR(160) NOT NULL UNIQUE,
+  fonte_url TEXT NOT NULL,
+  vigencia_fonte VARCHAR(255),
+  hash_payload VARCHAR(64) NOT NULL,
+  hash_catalogo VARCHAR(64) NOT NULL,
+  obtido_em TIMESTAMPTZ NOT NULL,
+  revisado_em TIMESTAMPTZ,
+  revisado_por VARCHAR(255),
+  status_revisao VARCHAR(20) NOT NULL DEFAULT 'pendente',
+  total_registros INTEGER NOT NULL,
+  total_codigos_ativos INTEGER NOT NULL,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT ncm_catalog_versions_review_status
+    CHECK (status_revisao IN ('pendente', 'aprovado', 'rejeitado'))
+);
+
+CREATE TABLE public.ncm_catalog_runs (
+  id SERIAL PRIMARY KEY,
+  operacao VARCHAR(20) NOT NULL CHECK (operacao IN ('check', 'update')),
+  versao_id INTEGER REFERENCES public.ncm_catalog_versions(id) ON DELETE SET NULL,
+  iniciado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finalizado_em TIMESTAMPTZ,
+  resultado VARCHAR(20) NOT NULL CHECK (resultado IN ('sucesso', 'falha')),
+  relatorio JSONB NOT NULL DEFAULT '{}'::jsonb,
+  erro TEXT
+);
+
 CREATE TABLE public.marketplaces (
   id SERIAL PRIMARY KEY,
   nome VARCHAR(255) NOT NULL,

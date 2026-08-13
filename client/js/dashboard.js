@@ -8,6 +8,7 @@ const dashboardSubtitle = document.getElementById('dashboard-subtitle')
 const feedbackElement = document.getElementById('dashboard-feedback')
 const productsTableBody = document.getElementById('products-table-body')
 const metricNegativeCard = document.getElementById('metric-negative-card')
+const ncmAdminAlert = document.getElementById('ncm-admin-alert')
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', {
@@ -93,6 +94,22 @@ function renderProducts(produtos) {
   setMetric('metric-listed', String(produtos.length))
 }
 
+async function carregarAlertaAdministrativoNcm() {
+  if (!ncmAdminAlert) return
+
+  try {
+    const status = await apiFetch('/ncm/status-administrativo')
+    if (!status.vencida) return
+    ncmAdminAlert.hidden = false
+    ncmAdminAlert.textContent = 'Administracao: a verificacao do catalogo NCM esta vencida. Execute npm run ncm:check.'
+    ncmAdminAlert.style.color = '#8f3f20'
+  } catch (error) {
+    if (!error.message.toLowerCase().includes('acesso administrativo')) {
+      console.error('Nao foi possivel carregar o alerta administrativo NCM.', error)
+    }
+  }
+}
+
 async function carregarPaginaProdutos(page, limit) {
   return apiFetch(`/produtos?limit=${limit}&page=${page}`)
 }
@@ -171,3 +188,4 @@ async function carregarDashboard() {
 document.getElementById('refresh-button')?.addEventListener('click', carregarDashboard)
 
 carregarDashboard()
+carregarAlertaAdministrativoNcm()

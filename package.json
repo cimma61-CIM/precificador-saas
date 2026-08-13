@@ -8,6 +8,8 @@
     "migrate:up": "node-pg-migrate up --migrations-dir server/migrations --envPath server/.env",
     "migrate:down": "node-pg-migrate down --migrations-dir server/migrations --envPath server/.env",
     "db:bootstrap": "node server/scripts/bootstrapDatabase.js",
+    "ncm:check": "node server/scripts/ncmCatalog.js check",
+    "ncm:update": "node server/scripts/ncmCatalog.js update",
     "seed:marketplaces": "node server/seedMarketplaces.js"
   },
   "dependencies": {

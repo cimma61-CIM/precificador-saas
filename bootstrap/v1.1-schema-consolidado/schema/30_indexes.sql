@@ -26,6 +26,8 @@ CREATE UNIQUE INDEX idx_produto_fornecedor_usuario_fornecedor_codigo_unique ON p
 CREATE INDEX idx_produto_fornecedor_produto ON public.produto_fornecedor(produto_id);
 CREATE INDEX idx_ncm_codigo ON public.ncm(codigo);
 CREATE INDEX idx_ncm_descricao_lower ON public.ncm(LOWER(descricao));
+CREATE INDEX idx_ncm_catalog_runs_operacao_finalizado
+  ON public.ncm_catalog_runs(operacao, finalizado_em DESC);
 CREATE INDEX idx_produtos_marketplaces_usuario_produto ON public.produtos_marketplaces(usuario_id, produto_id);
 CREATE INDEX idx_produtos_marketplaces_marketplace ON public.produtos_marketplaces(marketplace_id, usuario_id);
 CREATE UNIQUE INDEX idx_produtos_marketplaces_unique ON public.produtos_marketplaces(produto_id, marketplace_id);
